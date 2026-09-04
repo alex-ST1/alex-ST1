@@ -21,6 +21,7 @@ public enum AppTheme {
     public static let purple = Color(hex: "#A855F7")
     public static let amber = Color(hex: "#F59E0B")
     public static let roseRed = Color(hex: "#FB7185")
+    public static let rose = Color(hex: "#FB7185")
 
     // Text
     public static let textPrimary = Color(hex: "#F8FAFC")
