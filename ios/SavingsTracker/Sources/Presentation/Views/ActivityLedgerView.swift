@@ -133,9 +133,7 @@ public struct ActivityLedgerView: View {
                 .padding(18)
             }
             .background(AppTheme.background.ignoresSafeArea())
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(AppTheme.background, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
+            .darkNavigationBar()
         }
     }
 }

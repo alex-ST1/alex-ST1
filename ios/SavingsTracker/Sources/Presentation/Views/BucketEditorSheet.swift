@@ -284,9 +284,9 @@ public struct BucketEditorSheet: View {
             }
             .background(AppTheme.background.ignoresSafeArea())
             .navigationTitle(isEditMode ? "Edit Bucket" : "New Bucket")
-            .navigationBarTitleDisplayMode(.inline)
+            .darkNavigationBar()
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
                         AppTheme.playTapSound()
                         dismiss()
@@ -294,7 +294,6 @@ public struct BucketEditorSheet: View {
                     .foregroundColor(AppTheme.textSecondary)
                 }
             }
-            .toolbarColorScheme(.dark, for: .navigationBar)
             .onAppear {
                 if let goal = editingGoal {
                     name = goal.name

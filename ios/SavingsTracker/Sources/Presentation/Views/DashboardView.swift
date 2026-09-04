@@ -183,11 +183,7 @@ public struct DashboardView: View {
                     .padding(18)
                 }
                 .background(AppTheme.background.ignoresSafeArea())
-                #if os(iOS)
-                .navigationBarTitleDisplayMode(.inline)
-                #endif
-                .toolbarBackground(AppTheme.background, for: .navigationBar)
-                .toolbarColorScheme(.dark, for: .navigationBar)
+                .darkNavigationBar()
                 .toolbar {
                     ToolbarItem(placement: headerPlacement) {
                         HStack(spacing: 8) {

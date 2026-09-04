@@ -203,9 +203,7 @@ public struct DedicatedBucketsView: View {
                 .padding(18)
             }
             .background(AppTheme.background.ignoresSafeArea())
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(AppTheme.background, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
+            .darkNavigationBar()
             .sheet(isPresented: $viewModel.isCreateBucketModalPresented) {
                 BucketEditorSheet(viewModel: viewModel)
             }

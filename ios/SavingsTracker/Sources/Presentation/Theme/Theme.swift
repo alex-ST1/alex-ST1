@@ -143,4 +143,16 @@ extension View {
     public func glassCard(cornerRadius: CGFloat = 24, isHighlighted: Bool = false) -> some View {
         self.modifier(GlassCardModifier(cornerRadius: cornerRadius, isHighlighted: isHighlighted))
     }
+
+    @ViewBuilder
+    public func darkNavigationBar() -> some View {
+        #if os(iOS)
+        self
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(AppTheme.background, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+        #else
+        self
+        #endif
+    }
 }
