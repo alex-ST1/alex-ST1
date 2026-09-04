@@ -1,0 +1,226 @@
+import SwiftUI
+
+/// Bottom sheet modal for adding deposits with sanitized inputs and quick denomination chips.
+public struct AddDepositSheet: View {
+
+    @ObservedObject public var viewModel: DashboardViewModel
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var amountText: String = "1000"
+    @State private var selectedBucketId: String = "emergency"
+    @State private var noteText: String = ""
+    @State private var localError: String? = nil
+
+    public init(viewModel: DashboardViewModel, initialBucketId: String? = nil) {
+        self.viewModel = viewModel
+        if let bId = initialBucketId {
+            self._selectedBucketId = State(initialValue: bId)
+        }
+    }
+
+    private let quickDenominations: [Decimal] = [500, 1000, 2500, 5000]
+
+    public var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    // Header Subtitle
+                    Text("Instantly allocate savings to your dedicated buckets.")
+                        .font(.system(size: 13))
+                        .foregroundColor(AppTheme.textSecondary)
+
+                    // Quick Denomination Chips
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("SELECT AMOUNT")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(AppTheme.textSecondary)
+                            .tracking(0.6)
+
+                        HStack(spacing: 8) {
+                            ForEach(quickDenominations, id: \.self) { denom in
+                                let isSelected = amountText == "\(denom)"
+                                Button {
+                                    AppTheme.triggerHaptic(style: .light)
+                                    amountText = "\(denom)"
+                                    localError = nil
+                                } label: {
+                                    Text("+\(viewModel.metrics.currency.symbol)\(NSDecimalNumber(decimal: denom).intValue)")
+                                        .font(.system(size: 12, weight: .bold))
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 10)
+                                        .background(
+                                            isSelected
+                                                ? AppTheme.emerald.opacity(0.2)
+                                                : Color.white.opacity(0.06)
+                                        )
+                                        .foregroundColor(
+                                            isSelected
+                                                ? AppTheme.emeraldLight
+                                                : .white
+                                        )
+                                        .cornerRadius(12)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(
+                                                    isSelected
+                                                        ? AppTheme.emerald
+                                                        : Color.white.opacity(0.1),
+                                                    lineWidth: 1
+                                                )
+                                        )
+                                }
+                            }
+                        }
+
+                        // Custom Numeric Input Field
+                        HStack {
+                            Text(viewModel.metrics.currency.symbol)
+                                .font(.system(size: 20, weight: .black))
+                                .foregroundColor(AppTheme.emeraldLight)
+
+                            TextField("Amount", text: $amountText)
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.white)
+                                .keyboardType(.decimalPad)
+                                .onChange(of: amountText) { _ in
+                                    localError = nil
+                                }
+                        }
+                        .padding(14)
+                        .background(Color.black.opacity(0.35))
+                        .cornerRadius(16)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        )
+                    }
+
+                    // Destination Bucket Selection
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("ALLOCATE TO BUCKET")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(AppTheme.textSecondary)
+                            .tracking(0.6)
+
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                            ForEach(viewModel.goals) { goal in
+                                let isSelected = selectedBucketId == goal.id
+                                Button {
+                                    AppTheme.triggerHaptic(style: .light)
+                                    selectedBucketId = goal.id
+                                } label: {
+                                    HStack(spacing: 8) {
+                                        Circle()
+                                            .fill(Color(hex: goal.colorHex))
+                                            .frame(width: 8, height: 8)
+
+                                        Text(goal.name)
+                                            .font(.system(size: 12, weight: .semibold))
+                                            .foregroundColor(.white)
+                                            .lineLimit(1)
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(12)
+                                    .background(
+                                        isSelected
+                                            ? Color.white.opacity(0.14)
+                                            : Color.white.opacity(0.05)
+                                    )
+                                    .cornerRadius(14)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 14)
+                                            .stroke(
+                                                isSelected
+                                                    ? Color(hex: goal.colorHex)
+                                                    : Color.white.opacity(0.08),
+                                                lineWidth: 1
+                                            )
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Optional Note Input
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("TRANSACTION NOTE (OPTIONAL)")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(AppTheme.textSecondary)
+                            .tracking(0.6)
+
+                        TextField("e.g. Salary savings, Freelance bonus", text: $noteText)
+                            .font(.system(size: 13))
+                            .foregroundColor(.white)
+                            .padding(12)
+                            .background(Color.black.opacity(0.3))
+                            .cornerRadius(14)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                            )
+                    }
+
+                    // Error Notification if Validation Fails
+                    if let err = localError ?? viewModel.errorMessage {
+                        HStack(spacing: 6) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(AppTheme.roseRed)
+                                .font(.system(size: 12))
+                            Text(err)
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(AppTheme.roseRed)
+                        }
+                    }
+
+                    // Confirm Deposit Button
+                    Button {
+                        // Pre-validate locally
+                        let validation = InputSanitizer.validateAmount(amountText)
+                        switch validation {
+                        case .success:
+                            viewModel.deposit(rawAmount: amountText, bucketId: selectedBucketId, rawNote: noteText)
+                            dismiss()
+                        case .failure(let error):
+                            localError = error.localizedDescription
+                            AppTheme.triggerNotificationHaptic(type: .error)
+                        }
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 15, weight: .bold))
+                            Text("Confirm Deposit")
+                                .font(.system(size: 15, weight: .bold))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(
+                            LinearGradient(
+                                colors: [AppTheme.emerald, AppTheme.emerald.opacity(0.85)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .foregroundColor(.white)
+                        .cornerRadius(18)
+                        .shadow(color: AppTheme.emerald.opacity(0.4), radius: 10, y: 4)
+                    }
+                    .padding(.top, 8)
+                }
+                .padding(20)
+            }
+            .background(AppTheme.background.ignoresSafeArea())
+            .navigationTitle("Add Savings Deposit")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .foregroundColor(AppTheme.textSecondary)
+                }
+            }
+        }
+        .presentationDetents([.fraction(0.85), .large])
+        .presentationDragIndicator(.visible)
+    }
+}

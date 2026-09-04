@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0f1d"/>
+      <stop offset="100%" stop-color="#052e16"/>
+    </linearGradient>
+    <linearGradient id="glowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#10b981" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+
+  <!-- Background App Icon Shape (Apple Rounded Squircle) -->
+  <rect width="512" height="512" rx="115" fill="url(#bgGrad)"/>
+  <rect width="508" height="508" x="2" y="2" rx="113" fill="none" stroke="rgba(255, 255, 255, 0.12)" stroke-width="4"/>
+
+  <!-- Glowing Trend Graph Wave -->
+  <path d="M96 350 C 180 340, 220 250, 290 260 C 350 270, 370 170, 420 150" fill="none" stroke="#10b981" stroke-width="24" stroke-linecap="round" opacity="0.35"/>
+
+  <!-- Vault Shield / Diamond Icon -->
+  <g filter="url(#shadow)">
+    <!-- Main Diamond/Vault Shape -->
+    <path d="M256 90 L380 180 L380 330 L256 420 L132 330 L132 180 Z" fill="url(#glowGrad)"/>
+    <!-- Subtle Inner Highlight -->
+    <path d="M256 120 L350 190 L350 310 L256 380 L162 310 L162 190 Z" fill="#064e3b" opacity="0.45"/>
+    <!-- Center Currency Symbol -->
+    <text x="256" y="295" font-family="-apple-system, system-ui, sans-serif" font-size="160" font-weight="900" fill="#ffffff" text-anchor="middle">₹</text>
+  </g>
+
+  <!-- Sparkles -->
+  <circle cx="390" cy="130" r="14" fill="#34d399"/>
+  <circle cx="110" cy="370" r="10" fill="#10b981" opacity="0.7"/>
+</svg>

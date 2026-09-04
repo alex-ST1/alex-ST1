@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+
+# macOS / iOS / Xcode
+.DS_Store
+.build/
+build/
+*.xcarchive
+*.xcuserstate
+xcuserdata/
+DerivedData/
+.swiftpm/
+.idea/
+
+# General
+*.log
+*.swp
+*.bak

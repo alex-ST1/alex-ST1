@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Savings" />
+  <meta name="theme-color" content="#090c15" />
+  <meta name="description" content="Modern iOS Monthly Savings Tracker with dynamic animated graphs & rapid refresh" />
+
+  <title>Savings • Monthly Tracker</title>
+
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+
+  <!-- App Stylesheet -->
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <!-- Desktop Kali Linux Controls Bar -->
+  <aside class="desktop-controls-bar" aria-label="Desktop Controls">
+    <div class="flex items-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+      <span class="font-bold text-slate-200">Savings Tracker (iOS Mode)</span>
+    </div>
+    <div class="h-3 w-[1px] bg-white/20"></div>
+    <button id="toggleFrameBtn" class="text-xs text-emerald-400 hover:text-emerald-300 font-semibold cursor-pointer">
+      Switch to Expanded View
+    </button>
+  </aside>
+
+  <!-- iPhone Mockup Frame & App Shell -->
+  <main class="device-container" id="deviceContainer">
+
+    <!-- Hardware Dynamic Island (Desktop Preview Simulation) -->
+    <div class="dynamic-island" aria-hidden="true">
+      <div class="sensor"></div>
+      <div class="camera-lens"></div>
+    </div>
+
+    <!-- App Header -->
+    <header class="app-header">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 p-[1.5px] flex items-center justify-center shadow-lg shadow-emerald-500/20">
+          <div class="w-full h-full bg-[#0d121f] rounded-full flex items-center justify-center">
+            <span class="text-xs font-black text-emerald-400">₹</span>
+          </div>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 font-medium block leading-none">Savings Vault</span>
+          <span class="text-xs font-bold text-white leading-none">September 2026</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button class="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-300 btn-press" onclick="openAddModal()" aria-label="Quick Deposit">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Scrollable Content Area -->
+    <section class="app-content" id="appContent" aria-label="Main Viewport">
+      <!-- Dynamic Views Rendered Here via JavaScript -->
+    </section>
+
+    <!-- Floating Action Quick-Deposit Button -->
+    <button class="fab-add btn-press" onclick="openAddModal()" aria-label="Add Savings Deposit">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+    </button>
+
+    <!-- iOS Tab Bar -->
+    <nav class="tab-bar" id="tabBar" aria-label="Bottom Navigation">
+      <!-- Injected by js/app.js -->
+    </nav>
+
+    <!-- iOS Home Bar Indicator -->
+    <div class="home-indicator" aria-hidden="true"></div>
+
+    <!-- Modal Backdrop -->
+    <div class="modal-backdrop" id="modalBackdrop"></div>
+
+    <!-- iOS Bottom Sheet (Add Deposit Modal) -->
+    <div class="bottom-sheet" id="bottomSheet" role="dialog" aria-modal="true" aria-labelledby="modalSheetContent">
+      <div id="modalSheetContent">
+        <!-- Injected dynamically by js/app.js -->
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Application Logic Modules -->
+  <script src="js/icons.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/animations.js"></script>
+  <script src="js/chart.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
