@@ -79,6 +79,7 @@ final class CalculationTests: XCTestCase {
 
     func testCustomBucketCreationAndUpdate() async {
         let repo = SavingsRepository()
+        await repo.resetToDefaults()
         let created = await repo.createGoal(
             name: "New Car Fund",
             target: 500000,
@@ -113,6 +114,7 @@ final class CalculationTests: XCTestCase {
 
     func testCustomBucketDeletionAndReassignment() async {
         let repo = SavingsRepository()
+        await repo.resetToDefaults()
         let created = await repo.createGoal(
             name: "Temporary Bucket",
             target: 10000,
@@ -142,6 +144,7 @@ final class CalculationTests: XCTestCase {
 
     func testTransactionDeletionAndBalanceRecalculation() async {
         let repo = SavingsRepository()
+        await repo.resetToDefaults()
         let metricsBefore = await repo.getFinancialMetrics()
         let goalsBefore = await repo.getGoals()
         let emergencyBefore = goalsBefore.first(where: { $0.id == "emergency" })?.current ?? 0
@@ -174,6 +177,7 @@ final class CalculationTests: XCTestCase {
 
     func testAllBucketsRemovedGoalBarZero() async {
         let repo = SavingsRepository()
+        await repo.resetToDefaults()
         let initialGoals = await repo.getGoals()
 
         // Delete every bucket
@@ -198,6 +202,7 @@ final class CalculationTests: XCTestCase {
 
     func testClearAllTransactions() async {
         let repo = SavingsRepository()
+        await repo.resetToDefaults()
         await repo.clearAllTransactions()
 
         let txs = await repo.getTransactions()

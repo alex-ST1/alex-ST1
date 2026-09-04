@@ -22,9 +22,10 @@ public actor SavingsRepository {
 
     public init(storage: SecureStorageService = .shared) {
         self.storage = storage
-        self.snapshot = SavingsRepository.createInitialSnapshot()
-        Task {
-            await self.loadData()
+        if let loaded = try? storage.loadDecrypted(SavingsSnapshot.self, from: "savings_vault_v1.enc") {
+            self.snapshot = loaded
+        } else {
+            self.snapshot = SavingsRepository.createInitialSnapshot()
         }
     }
 
