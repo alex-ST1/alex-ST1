@@ -5,6 +5,7 @@ on:
     branches: [ main, master, savings-tracker ]
   pull_request:
     branches: [ main, master, savings-tracker ]
+  workflow_dispatch:
 
 jobs:
   build-and-test:
@@ -24,3 +25,18 @@ jobs:
       - name: Run Unit & Security Tests
         working-directory: ios/SavingsTracker
         run: swift test -v
+
+      - name: Install XcodeGen
+        run: HOMEBREW_NO_AUTO_UPDATE=1 brew install xcodegen
+
+      - name: Build & Package iOS IPA
+        working-directory: ios/SavingsTracker
+        run: ./package_ipa.sh
+
+      - name: Upload IPA Release Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SavingsTracker-iOS-IPA
+          path: ios/SavingsTracker/SavingsTracker.ipa
+          if-no-files-found: error
+          retention-days: 30
