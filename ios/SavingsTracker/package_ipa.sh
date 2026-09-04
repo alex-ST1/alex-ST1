@@ -46,13 +46,16 @@ app_plist_path = '$APP_PATH/Info.plist'
 with open(app_plist_path, 'rb') as f:
     app_pl = plistlib.load(f)
 
-with open('Info.plist', 'rb') as f:
+with open('CustomInfo.plist', 'rb') as f:
     src_pl = plistlib.load(f)
 
 for k, v in src_pl.items():
-    if k not in app_pl:
+    if k not in ['CFBundleExecutable', 'CFBundleName']:
         app_pl[k] = v
-        print(f'Merged missing key: {k}')
+        print(f'Injected runtime key: {k}')
+
+app_pl['CFBundleExecutable'] = 'Savings Vault'
+app_pl['CFBundleName'] = 'Savings Vault'
 
 with open(app_plist_path, 'wb') as f:
     plistlib.dump(app_pl, f)
