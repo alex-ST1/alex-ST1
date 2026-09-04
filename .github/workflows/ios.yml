@@ -2,9 +2,9 @@ name: iOS Security & Build CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, savings-tracker ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, savings-tracker ]
 
 jobs:
   build-and-test:
