@@ -24,7 +24,9 @@ public struct AboutSheet: View {
             }
             .background(AppTheme.background.ignoresSafeArea())
             .navigationTitle("About")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .darkNavigationBar()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -219,7 +221,7 @@ public struct AboutSheet: View {
             featureRow(icon: "faceid", color: AppTheme.emeraldLight, title: "Biometric Protection", desc: "Face ID / Touch ID authentication with automatic privacy shield.")
             featureRow(icon: "target", color: AppTheme.purple, title: "Customizable Buckets", desc: "Create, customize, edit, and delete dedicated financial goals.")
             featureRow(icon: "speaker.wave.2.fill", color: AppTheme.cyan, title: "Fintech Audio Chimes", desc: "Acoustic audio cues synthesized for deposit milestones.")
-            featureRow(icon: "viewfinder", color: AppTheme.amberGold, title: "Responsive Layout", desc: "Dynamic edge-to-edge resolution scaling across all iOS devices.")
+            featureRow(icon: "viewfinder", color: AppTheme.amber, title: "Responsive Layout", desc: "Dynamic edge-to-edge resolution scaling across all iOS devices.")
         }
         .padding(18)
         .glassCard(cornerRadius: 20)
