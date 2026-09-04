@@ -96,13 +96,15 @@ final class AppLockTests: XCTestCase {
         XCTAssertFalse(manager.isLocked)
     }
 
-    func testImmediateLockOnBackgroundTransition() {
+    func testImmediateLockOnBackgroundTransition() async {
         testUserDefaults.set(true, forKey: "com.savingstracker.app.app_lock_enabled")
         let manager = AppLockManager(biometricManager: mockAuth, userDefaults: testUserDefaults)
         manager.autoLockTimeout = .immediate
 
         // Unlock first
-        manager.isAppLockEnabled = true
+        mockAuth.shouldAuthenticateSucceed = true
+        _ = await manager.requestUnlock()
+        XCTAssertFalse(manager.isLocked)
 
         // Simulate entering background
         manager.handleScenePhaseChange(.background)
@@ -110,12 +112,17 @@ final class AppLockTests: XCTestCase {
         XCTAssertNotNil(manager.lastBackgroundDate)
     }
 
-    func testGracePeriodTimeoutEvaluation() {
+    func testGracePeriodTimeoutEvaluation() async {
         testUserDefaults.set(true, forKey: "com.savingstracker.app.app_lock_enabled")
         let manager = AppLockManager(biometricManager: mockAuth, userDefaults: testUserDefaults)
         manager.autoLockTimeout = .oneMinute
 
         // Unlock initially
+        mockAuth.shouldAuthenticateSucceed = true
+        _ = await manager.requestUnlock()
+        XCTAssertFalse(manager.isLocked)
+
+        // Simulate background transition
         manager.handleScenePhaseChange(.background)
         // Background with 1 min timeout should not lock immediately
         XCTAssertFalse(manager.isLocked)
