@@ -46,8 +46,15 @@ public final class DashboardViewModel: ObservableObject {
         self.transactions = await self.repository.getTransactions()
     }
 
-    /// Executes a verified deposit with strict validation.
-    public func deposit(rawAmount: String, bucketId: String, rawNote: String) {
+    public var currentPeriod: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter.string(from: Date())
+    }
+
+    /// Executes a verified deposit with strict validation and optional custom date.
+    public func deposit(rawAmount: String, bucketId: String, rawNote: String, date: Date = Date()) {
         // 1. Strict Input Sanitization
         let amountResult = InputSanitizer.validateAmount(rawAmount)
         guard case .success(let amount) = amountResult else {
@@ -73,7 +80,7 @@ public final class DashboardViewModel: ObservableObject {
             let targetGoal = self.metrics.currentGoal
 
             // 2. Perform Repository Mutation (actor-safe)
-            let tx = await self.repository.addDeposit(amount: amount, bucketId: bucketId, note: note)
+            let tx = await self.repository.addDeposit(amount: amount, bucketId: bucketId, note: note, date: date)
             await self.loadData()
 
             // 3. Audio & Haptic Feedback

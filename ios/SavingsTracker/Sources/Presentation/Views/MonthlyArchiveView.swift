@@ -112,7 +112,7 @@ public struct MonthlyArchiveView: View {
 
     @ViewBuilder
     private func monthlyRecordRow(_ record: MonthlyRecord) -> some View {
-        let isCurrent = record.period == "2026-09"
+        let isCurrent = record.period == viewModel.currentPeriod
 
         VStack(spacing: 12) {
             HStack(alignment: .top) {
@@ -133,9 +133,15 @@ public struct MonthlyArchiveView: View {
                         }
                     }
 
-                    Text("Target: \(viewModel.metrics.currency.format(amount: record.goal))")
-                        .font(.system(size: 12))
-                        .foregroundColor(AppTheme.textSecondary)
+                    if record.goal > 0 {
+                        Text("Target: \(viewModel.metrics.currency.format(amount: record.goal))")
+                            .font(.system(size: 12))
+                            .foregroundColor(AppTheme.textSecondary)
+                    } else {
+                        Text("Monthly Savings")
+                            .font(.system(size: 12))
+                            .foregroundColor(AppTheme.textSecondary)
+                    }
                 }
 
                 Spacer()
@@ -147,9 +153,15 @@ public struct MonthlyArchiveView: View {
                             .foregroundColor(AppTheme.emeraldLight)
                             .monospacedDigit()
 
-                        Text("\(record.progressPercentage)% Saved")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(AppTheme.textSecondary)
+                        if record.goal > 0 {
+                            Text("\(record.progressPercentage)% Saved")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(AppTheme.textSecondary)
+                        } else {
+                            Text("Total Deposited")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(AppTheme.textSecondary)
+                        }
                     }
 
                     // Direct red trash button

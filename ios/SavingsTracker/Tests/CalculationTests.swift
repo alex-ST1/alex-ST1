@@ -273,4 +273,87 @@ final class CalculationTests: XCTestCase {
         XCTAssertEqual(metricsAfter.avgMonthly, 0)
         XCTAssertEqual(metricsAfter.projectedAnnual, 0)
     }
+
+    func testBucketCreationUpdatesGoalAndProgress() async {
+        let repo = SavingsRepository()
+        await repo.resetToDefaults()
+
+        // 1. Initial empty state: no buckets, 0 target, 0% progress
+        let initialMetrics = await repo.getFinancialMetrics()
+        XCTAssertEqual(initialMetrics.currentGoal, 0)
+        XCTAssertEqual(initialMetrics.totalBucketTargets, 0)
+        XCTAssertEqual(initialMetrics.progressPercent, 0)
+
+        // 2. Create a bucket with target 50,000
+        let bucket = await repo.createGoal(
+            name: "Emergency Fund",
+            target: 50000,
+            colorHex: "#10B981",
+            iconName: "shield.fill",
+            category: "Safety"
+        )
+
+        let metricsAfterBucket = await repo.getFinancialMetrics()
+        // Goal must immediately equal bucket target (NOT 0)
+        XCTAssertEqual(metricsAfterBucket.currentGoal, 50000)
+        XCTAssertEqual(metricsAfterBucket.totalBucketTargets, 50000)
+        XCTAssertEqual(metricsAfterBucket.progressPercent, 0)
+
+        // 3. Deposit 10,000 into the bucket -> progress must be 20%
+        _ = await repo.addDeposit(amount: 10000, bucketId: bucket.id, note: "Initial seed")
+        let metricsAfterDeposit = await repo.getFinancialMetrics()
+        XCTAssertEqual(metricsAfterDeposit.currentGoal, 50000)
+        XCTAssertEqual(metricsAfterDeposit.totalSavings, 10000)
+        XCTAssertEqual(metricsAfterDeposit.progressPercent, 20)
+
+        // 4. Create second bucket with target 50,000 -> total target = 100,000, progress = 10%
+        _ = await repo.createGoal(
+            name: "Travel Fund",
+            target: 50000,
+            colorHex: "#06B6D4",
+            iconName: "airplane",
+            category: "Leisure"
+        )
+        let metricsWithTwoBuckets = await repo.getFinancialMetrics()
+        XCTAssertEqual(metricsWithTwoBuckets.currentGoal, 100000)
+        XCTAssertEqual(metricsWithTwoBuckets.totalBucketTargets, 100000)
+        XCTAssertEqual(metricsWithTwoBuckets.progressPercent, 10)
+    }
+
+    func testDepositWithCustomDateRouting() async {
+        let repo = SavingsRepository()
+        await repo.resetToDefaults()
+
+        let bucket = await repo.createGoal(
+            name: "Retirement",
+            target: 100000,
+            colorHex: "#10B981",
+            iconName: "lock.shield.fill",
+            category: "LongTerm"
+        )
+
+        // Create a date in 2026-05
+        var components = DateComponents()
+        components.year = 2026
+        components.month = 5
+        components.day = 15
+        components.hour = 12
+        let calendar = Calendar(identifier: .gregorian)
+        let pastDate = calendar.date(from: components)!
+
+        let tx = await repo.addDeposit(amount: 25000, bucketId: bucket.id, note: "May Deposit", date: pastDate)
+        XCTAssertEqual(tx.date, pastDate)
+
+        // Monthly record for 2026-05 must exist
+        let records = await repo.getMonthlyRecords()
+        let mayRecord = records.first(where: { $0.period == "2026-05" })
+        XCTAssertNotNil(mayRecord)
+        XCTAssertEqual(mayRecord?.saved, 25000)
+        XCTAssertEqual(mayRecord?.goal, 100000)
+
+        let metrics = await repo.getFinancialMetrics()
+        XCTAssertEqual(metrics.totalSavings, 25000)
+        XCTAssertEqual(metrics.currentGoal, 100000)
+        XCTAssertEqual(metrics.progressPercent, 25)
+    }
 }

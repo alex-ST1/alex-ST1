@@ -197,7 +197,7 @@ public struct DashboardView: View {
                 Text("Savings Vault")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.white)
-                Text("September 2026")
+                Text(Date().formatted(.dateTime.month(.wide).year()))
                     .font(.system(size: 9))
                     .foregroundColor(AppTheme.textSecondary)
             }
@@ -304,7 +304,7 @@ public struct DashboardView: View {
                 Text(tx.note)
                     .font(.system(size: 12, weight: .bold))
                     .foregroundColor(.white)
-                Text(tx.bucketName)
+                Text("\(tx.bucketName) • \(tx.date.formatted(.dateTime.day().month(.abbreviated)))")
                     .font(.system(size: 10))
                     .foregroundColor(AppTheme.textSecondary)
             }

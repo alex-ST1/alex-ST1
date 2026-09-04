@@ -8,6 +8,7 @@ public struct AddDepositSheet: View {
 
     @State private var amountText: String = "1000"
     @State private var selectedBucketId: String = ""
+    @State private var selectedDate: Date = Date()
     @State private var noteText: String = ""
     @State private var localError: String? = nil
 
@@ -29,6 +30,7 @@ public struct AddDepositSheet: View {
 
                     amountSection
                     bucketSection
+                    dateSection
                     noteSection
 
                     if let err = localError ?? viewModel.errorMessage {
@@ -188,6 +190,44 @@ public struct AddDepositSheet: View {
         }
     }
 
+    private var dateSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("ENTRY DATE")
+                .font(.system(size: 10, weight: .bold))
+                .foregroundColor(AppTheme.textSecondary)
+                .tracking(0.6)
+
+            HStack(spacing: 10) {
+                Image(systemName: "calendar")
+                    .foregroundColor(AppTheme.emeraldLight)
+                    .font(.system(size: 16))
+
+                Text("Date")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.white)
+
+                Spacer()
+
+                DatePicker(
+                    "Entry Date",
+                    selection: $selectedDate,
+                    in: ...Date(),
+                    displayedComponents: [.date]
+                )
+                .datePickerStyle(.compact)
+                .labelsHidden()
+                .tint(AppTheme.emeraldLight)
+            }
+            .padding(12)
+            .background(Color.black.opacity(0.3))
+            .cornerRadius(14)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
+            )
+        }
+    }
+
     private var noteSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("TRANSACTION NOTE (OPTIONAL)")
@@ -224,7 +264,7 @@ public struct AddDepositSheet: View {
             let validation = InputSanitizer.validateAmount(amountText)
             switch validation {
             case .success:
-                viewModel.deposit(rawAmount: amountText, bucketId: selectedBucketId, rawNote: noteText)
+                viewModel.deposit(rawAmount: amountText, bucketId: selectedBucketId, rawNote: noteText, date: selectedDate)
                 dismiss()
             case .failure(let error):
                 localError = error.localizedDescription

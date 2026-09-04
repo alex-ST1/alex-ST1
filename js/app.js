@@ -648,6 +648,18 @@ function openAddModal(defaultBucketId = null) {
       </div>
     </div>
 
+    <!-- Entry Date -->
+    <div class="mb-4">
+      <span class="text-xs font-semibold text-slate-400 block mb-2">Entry Date</span>
+      <input
+        id="depositDateInput"
+        type="date"
+        value="${new Date().toISOString().split('T')[0]}"
+        max="${new Date().toISOString().split('T')[0]}"
+        class="w-full bg-black/30 border border-white/10 rounded-xl py-2.5 px-3 text-xs text-white focus:outline-none focus:border-emerald-500"
+      />
+    </div>
+
     <!-- Optional Note -->
     <div class="mb-5">
       <input
@@ -716,8 +728,10 @@ function quickAddAmount(amt) {
 function confirmDeposit() {
   const amountInput = document.getElementById('customAmountInput');
   const noteInput = document.getElementById('depositNoteInput');
+  const dateInput = document.getElementById('depositDateInput');
   const amt = amountInput ? parseFloat(amountInput.value) : selectedAmount;
   const note = noteInput && noteInput.value.trim() ? noteInput.value.trim() : 'Manual Deposit';
+  const dateVal = dateInput && dateInput.value ? dateInput.value : new Date().toISOString().split('T')[0];
 
   if (!amt || amt <= 0) {
     amountInput.focus();
@@ -735,7 +749,8 @@ function confirmDeposit() {
   store.addDeposit({
     amount: amt,
     bucketId: selectedBucketId,
-    note: note
+    note: note,
+    date: dateVal
   });
 }
 

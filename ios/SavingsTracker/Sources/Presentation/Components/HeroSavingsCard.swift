@@ -67,17 +67,17 @@ public struct HeroSavingsCard: View {
                 )
             }
 
-            // Monthly Target Row (Rock-Solid Layout)
+            // Target Row (Active Goals or Monthly Savings)
             VStack(spacing: 8) {
                 Divider()
                     .background(Color.white.opacity(0.1))
 
                 HStack(alignment: .firstTextBaseline) {
                     HStack(spacing: 6) {
-                        Image(systemName: "calendar")
+                        Image(systemName: metrics.totalBucketTargets > 0 ? "target" : "calendar")
                             .foregroundColor(AppTheme.emeraldLight)
                             .font(.system(size: 12))
-                        Text("September Savings")
+                        Text(metrics.totalBucketTargets > 0 ? "Active Goals Progress" : "\(Date().formatted(.dateTime.month(.wide))) Savings")
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(AppTheme.textPrimary)
                     }
@@ -85,7 +85,7 @@ public struct HeroSavingsCard: View {
                     Spacer()
 
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text(metrics.currency.format(amount: metrics.currentMonthSaved))
+                        Text(metrics.currency.format(amount: metrics.totalBucketTargets > 0 ? metrics.totalSavings : metrics.currentMonthSaved))
                             .font(.system(size: 14, weight: .heavy))
                             .foregroundColor(.white)
                             .monospacedDigit()

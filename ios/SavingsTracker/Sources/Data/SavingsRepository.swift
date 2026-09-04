@@ -95,23 +95,24 @@ public actor SavingsRepository {
 
         let currentSaved: Decimal
         let currentGoal: Decimal
+        let progressPercent: Int
 
-        if snapshot.goals.isEmpty {
-            currentSaved = 0
-            currentGoal = 0
-        } else {
+        if totalBucketTargets > 0 {
+            currentGoal = totalBucketTargets
+            let ratio = (totalSavings as NSDecimalNumber).doubleValue / (totalBucketTargets as NSDecimalNumber).doubleValue
+            progressPercent = min(100, max(0, Int((ratio * 100).rounded())))
             let currentRecord = snapshot.monthlyRecords[snapshot.currentPeriod]
             currentSaved = currentRecord?.saved ?? 0
-            let rawGoal = currentRecord?.goal ?? snapshot.monthlyGoal
-            currentGoal = totalBucketTargets > 0 ? min(rawGoal, totalBucketTargets) : rawGoal
-        }
-
-        let progressPercent: Int
-        if currentGoal > 0 {
+        } else if snapshot.monthlyGoal > 0 {
+            currentGoal = snapshot.monthlyGoal
+            let currentRecord = snapshot.monthlyRecords[snapshot.currentPeriod]
+            currentSaved = currentRecord?.saved ?? 0
             let ratio = (currentSaved as NSDecimalNumber).doubleValue / (currentGoal as NSDecimalNumber).doubleValue
             progressPercent = min(100, max(0, Int((ratio * 100).rounded())))
         } else {
+            currentGoal = 0
             progressPercent = 0
+            currentSaved = snapshot.monthlyRecords[snapshot.currentPeriod]?.saved ?? 0
         }
 
         // Calculate Month-over-Month change
@@ -148,16 +149,21 @@ public actor SavingsRepository {
 
     // MARK: - Mutations
 
-    /// Adds a validated deposit to a specific bucket and updates current month records.
-    public func addDeposit(amount: Decimal, bucketId: String, note: String) -> SavingsTransaction {
-        let period = snapshot.currentPeriod
+    /// Adds a validated deposit to a specific bucket with an optional custom date, updating records and trajectories.
+    public func addDeposit(amount: Decimal, bucketId: String, note: String, date: Date = Date()) -> SavingsTransaction {
+        let period = period(for: date)
+        let totalBucketTargets = snapshot.goals.reduce(Decimal(0)) { $0 + $1.target }
+        let targetGoal = totalBucketTargets > 0 ? totalBucketTargets : snapshot.monthlyGoal
 
-        // 1. Update Monthly Record
+        // 1. Update Monthly Record for the specific transaction date's period
         if var record = snapshot.monthlyRecords[period] {
             record.saved += amount
+            if record.goal == 0 && targetGoal > 0 {
+                record.goal = targetGoal
+            }
             snapshot.monthlyRecords[period] = record
         } else {
-            let newRecord = MonthlyRecord(period: period, saved: amount, goal: snapshot.monthlyGoal)
+            let newRecord = MonthlyRecord(period: period, saved: amount, goal: targetGoal)
             snapshot.monthlyRecords[period] = newRecord
         }
 
@@ -186,14 +192,16 @@ public actor SavingsRepository {
             bucketName = snapshot.goals[0].name
         }
 
-        // 3. Create Transaction
+        // 3. Create Transaction with chosen date
         let tx = SavingsTransaction(
+            date: date,
             amount: amount,
             bucketId: targetBucketId,
             bucketName: bucketName,
             note: note.isEmpty ? "Quick Deposit" : note
         )
-        snapshot.transactions.insert(tx, at: 0)
+        snapshot.transactions.append(tx)
+        snapshot.transactions.sort { $0.date > $1.date }
 
         // Persist
         saveData()
@@ -322,9 +330,8 @@ public actor SavingsRepository {
         // If no buckets remain, clear all transactions and reset monthly savings
         if snapshot.goals.isEmpty {
             snapshot.transactions.removeAll()
-            if var currentRec = snapshot.monthlyRecords[snapshot.currentPeriod] {
-                currentRec.saved = 0
-                snapshot.monthlyRecords[snapshot.currentPeriod] = currentRec
+            for key in snapshot.monthlyRecords.keys {
+                snapshot.monthlyRecords[key]?.saved = 0
             }
             saveData()
             SecureLogger.finance.info("All savings buckets removed. Cleared all related transactions and reset calculations.")

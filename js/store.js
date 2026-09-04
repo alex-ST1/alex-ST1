@@ -190,20 +190,29 @@ class SavingsStore {
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) return false;
 
-    const period = this.getCurrentPeriod();
+    // Derive period from date (e.g. "2026-08")
+    const dateObj = new Date(date);
+    const period = !isNaN(dateObj.getTime())
+      ? dateObj.toISOString().slice(0, 7)
+      : this.getCurrentPeriod();
     const oldTotal = this.getTotalSavings();
     const oldMonthSaved = this.getMonthSaved(period);
 
     // 1. Update Monthly History
+    const totalBucketTargets = this.state.buckets.reduce((acc, b) => acc + (b.target || 0), 0);
+    const targetGoal = totalBucketTargets > 0 ? totalBucketTargets : this.state.settings.monthlyGoal;
     if (!this.state.monthlyHistory[period]) {
       this.state.monthlyHistory[period] = {
         saved: 0,
-        goal: this.state.settings.monthlyGoal,
+        goal: targetGoal,
         income: 75000,
         expenses: 50000
       };
     }
     this.state.monthlyHistory[period].saved += numAmount;
+    if (this.state.monthlyHistory[period].goal === 0 && targetGoal > 0) {
+      this.state.monthlyHistory[period].goal = targetGoal;
+    }
 
     // 2. Update specific bucket if provided
     let targetBucket = null;
@@ -281,10 +290,13 @@ class SavingsStore {
 
   getOverallMetrics() {
     const totalSavings = this.getTotalSavings();
+    const totalBucketTargets = this.state.buckets.reduce((acc, b) => acc + (b.target || 0), 0);
     const currentPeriod = this.getCurrentPeriod();
     const currentMonthSaved = this.getMonthSaved(currentPeriod);
-    const currentGoal = this.getMonthGoal(currentPeriod);
-    const progressPercent = Math.min(100, Math.round((currentMonthSaved / currentGoal) * 100));
+    const currentGoal = totalBucketTargets > 0 ? totalBucketTargets : this.getMonthGoal(currentPeriod);
+    const progressPercent = currentGoal > 0
+      ? Math.min(100, Math.round(((totalBucketTargets > 0 ? totalSavings : currentMonthSaved) / currentGoal) * 100))
+      : 0;
 
     // Calculate Month-over-Month change
     const months = Object.keys(this.state.monthlyHistory).sort();
