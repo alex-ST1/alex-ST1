@@ -29,74 +29,15 @@ public actor SavingsRepository {
         }
     }
 
-    /// Default sample data matching our production INR settings.
+    /// Clean initial snapshot with no sample data so user can enter actual entries.
     public static func createInitialSnapshot() -> SavingsSnapshot {
-        let defaultGoals: [SavingsGoal] = [
-            SavingsGoal(
-                id: "emergency",
-                name: "Emergency Fund",
-                target: 200_000,
-                current: 145_000,
-                colorHex: "#10B981",
-                iconName: "shield.fill",
-                category: "Safety"
-            ),
-            SavingsGoal(
-                id: "investments",
-                name: "Mutual Funds & SIP",
-                target: 150_000,
-                current: 95_000,
-                colorHex: "#3B82F6",
-                iconName: "chart.line.uptrend.xyaxis",
-                category: "Wealth"
-            ),
-            SavingsGoal(
-                id: "travel",
-                name: "Goa & Ladakh Trip",
-                target: 60_000,
-                current: 42_000,
-                colorHex: "#06B6D4",
-                iconName: "airplane",
-                category: "Leisure"
-            ),
-            SavingsGoal(
-                id: "tech",
-                name: "Workstation & Tech",
-                target: 50_000,
-                current: 32_000,
-                colorHex: "#A855F7",
-                iconName: "laptopcomputer",
-                category: "Gadgets"
-            )
-        ]
-
-        let initialHistory: [String: MonthlyRecord] = [
-            "2026-01": MonthlyRecord(period: "2026-01", saved: 18_000, goal: 20_000, income: 65_000, expenses: 47_000),
-            "2026-02": MonthlyRecord(period: "2026-02", saved: 22_000, goal: 20_000, income: 65_000, expenses: 43_000),
-            "2026-03": MonthlyRecord(period: "2026-03", saved: 25_000, goal: 25_000, income: 70_000, expenses: 45_000),
-            "2026-04": MonthlyRecord(period: "2026-04", saved: 21_000, goal: 25_000, income: 68_000, expenses: 47_000),
-            "2026-05": MonthlyRecord(period: "2026-05", saved: 28_000, goal: 25_000, income: 75_000, expenses: 47_000),
-            "2026-06": MonthlyRecord(period: "2026-06", saved: 30_000, goal: 25_000, income: 78_000, expenses: 48_000),
-            "2026-07": MonthlyRecord(period: "2026-07", saved: 26_000, goal: 25_000, income: 72_000, expenses: 46_000),
-            "2026-08": MonthlyRecord(period: "2026-08", saved: 32_000, goal: 25_000, income: 80_000, expenses: 48_000),
-            "2026-09": MonthlyRecord(period: "2026-09", saved: 18_500, goal: 25_000, income: 75_000, expenses: 56_500)
-        ]
-
-        let initialTxs: [SavingsTransaction] = [
-            SavingsTransaction(amount: 5_000, bucketId: "emergency", bucketName: "Emergency Fund", note: "Monthly salary allocation"),
-            SavingsTransaction(amount: 2_500, bucketId: "travel", bucketName: "Goa & Ladakh Trip", note: "Weekend savings deposit"),
-            SavingsTransaction(amount: 6_000, bucketId: "investments", bucketName: "Mutual Funds & SIP", note: "Monthly SIP auto-debit"),
-            SavingsTransaction(amount: 3_500, bucketId: "tech", bucketName: "Workstation & Tech", note: "Freelance project milestone"),
-            SavingsTransaction(amount: 8_000, bucketId: "emergency", bucketName: "Emergency Fund", note: "Performance bonus")
-        ]
-
         return SavingsSnapshot(
             currency: .inr,
             currentPeriod: "2026-09",
-            monthlyGoal: 25_000,
-            monthlyRecords: initialHistory,
-            goals: defaultGoals,
-            transactions: initialTxs
+            monthlyGoal: 0,
+            monthlyRecords: [:],
+            goals: [],
+            transactions: []
         )
     }
 
@@ -188,7 +129,8 @@ public actor SavingsRepository {
         let allSaved = snapshot.monthlyRecords.values.map { $0.saved }
         let sumSaved = allSaved.reduce(Decimal(0), +)
         let avgMonthly = allSaved.isEmpty ? Decimal(0) : sumSaved / Decimal(allSaved.count)
-        let projectedAnnual = sumSaved + (avgMonthly * 3)
+        let remainingMonths = max(0, 12 - allSaved.count)
+        let projectedAnnual = allSaved.isEmpty ? Decimal(0) : (sumSaved + (avgMonthly * Decimal(remainingMonths)))
 
         return FinancialMetrics(
             totalSavings: totalSavings,
@@ -220,16 +162,34 @@ public actor SavingsRepository {
         }
 
         // 2. Update Goal Bucket
+        var targetBucketId = bucketId
         var bucketName = "General Savings"
-        if let idx = snapshot.goals.firstIndex(where: { $0.id == bucketId }) {
+        if snapshot.goals.isEmpty {
+            let autoBucket = SavingsGoal(
+                id: "general",
+                name: "General Savings",
+                target: max(amount, 50000),
+                current: amount,
+                colorHex: "#10B981",
+                iconName: "vault.fill",
+                category: "Savings"
+            )
+            snapshot.goals.append(autoBucket)
+            targetBucketId = autoBucket.id
+            bucketName = autoBucket.name
+        } else if let idx = snapshot.goals.firstIndex(where: { $0.id == bucketId }) {
             snapshot.goals[idx].current += amount
             bucketName = snapshot.goals[idx].name
+        } else {
+            snapshot.goals[0].current += amount
+            targetBucketId = snapshot.goals[0].id
+            bucketName = snapshot.goals[0].name
         }
 
         // 3. Create Transaction
         let tx = SavingsTransaction(
             amount: amount,
-            bucketId: bucketId,
+            bucketId: targetBucketId,
             bucketName: bucketName,
             note: note.isEmpty ? "Quick Deposit" : note
         )
@@ -391,6 +351,15 @@ public actor SavingsRepository {
 
         saveData()
         SecureLogger.finance.info("Custom savings bucket deleted: \(deletedGoal.name, privacy: .public)")
+        return true
+    }
+
+    /// Deletes a monthly history record by period (e.g. "2026-08") and updates persisted state.
+    public func deleteMonthlyRecord(period: String) -> Bool {
+        guard snapshot.monthlyRecords[period] != nil else { return false }
+        snapshot.monthlyRecords.removeValue(forKey: period)
+        saveData()
+        SecureLogger.finance.info("Deleted monthly history record for period: \(period, privacy: .public)")
         return true
     }
 

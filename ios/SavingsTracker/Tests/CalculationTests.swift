@@ -115,6 +115,13 @@ final class CalculationTests: XCTestCase {
     func testCustomBucketDeletionAndReassignment() async {
         let repo = SavingsRepository()
         await repo.resetToDefaults()
+        let mainBucket = await repo.createGoal(
+            name: "Main Savings",
+            target: 100000,
+            colorHex: "#10B981",
+            iconName: "shield.fill",
+            category: "Safety"
+        )
         let created = await repo.createGoal(
             name: "Temporary Bucket",
             target: 10000,
@@ -134,26 +141,34 @@ final class CalculationTests: XCTestCase {
 
         let goalsAfter = await repo.getGoals()
         XCTAssertFalse(goalsAfter.contains(where: { $0.id == created.id }))
+        XCTAssertTrue(goalsAfter.contains(where: { $0.id == mainBucket.id }))
 
         // Audit integrity: transactions should now be reassigned to fallback
         let txsAfter = await repo.getTransactions()
         let targetTx = txsAfter.first(where: { $0.note == "Gift savings" })
         XCTAssertNotNil(targetTx)
-        XCTAssertNotEqual(targetTx?.bucketId, created.id)
+        XCTAssertEqual(targetTx?.bucketId, mainBucket.id)
     }
 
     func testTransactionDeletionAndBalanceRecalculation() async {
         let repo = SavingsRepository()
         await repo.resetToDefaults()
+        let bucket = await repo.createGoal(
+            name: "Emergency Fund",
+            target: 200000,
+            colorHex: "#10B981",
+            iconName: "shield.fill",
+            category: "Safety"
+        )
         let metricsBefore = await repo.getFinancialMetrics()
         let goalsBefore = await repo.getGoals()
-        let emergencyBefore = goalsBefore.first(where: { $0.id == "emergency" })?.current ?? 0
+        let emergencyBefore = goalsBefore.first(where: { $0.id == bucket.id })?.current ?? 0
 
         // Add a deposit
-        let depositTx = await repo.addDeposit(amount: 5000, bucketId: "emergency", note: "Test deposit for removal")
+        let depositTx = await repo.addDeposit(amount: 5000, bucketId: bucket.id, note: "Test deposit for removal")
         let metricsMid = await repo.getFinancialMetrics()
         let goalsMid = await repo.getGoals()
-        let emergencyMid = goalsMid.first(where: { $0.id == "emergency" })?.current ?? 0
+        let emergencyMid = goalsMid.first(where: { $0.id == bucket.id })?.current ?? 0
 
         XCTAssertEqual(emergencyMid, emergencyBefore + 5000)
         XCTAssertEqual(metricsMid.totalSavings, metricsBefore.totalSavings + 5000)
@@ -165,7 +180,7 @@ final class CalculationTests: XCTestCase {
 
         let metricsAfter = await repo.getFinancialMetrics()
         let goalsAfter = await repo.getGoals()
-        let emergencyAfter = goalsAfter.first(where: { $0.id == "emergency" })?.current ?? 0
+        let emergencyAfter = goalsAfter.first(where: { $0.id == bucket.id })?.current ?? 0
         let txsAfter = await repo.getTransactions()
 
         // Balances must exactly return to baseline
@@ -178,7 +193,12 @@ final class CalculationTests: XCTestCase {
     func testAllBucketsRemovedGoalBarZero() async {
         let repo = SavingsRepository()
         await repo.resetToDefaults()
+        let goal1 = await repo.createGoal(name: "Goal 1", target: 50000, colorHex: "#10B981", iconName: "star", category: "General")
+        let goal2 = await repo.createGoal(name: "Goal 2", target: 50000, colorHex: "#3B82F6", iconName: "star", category: "General")
+        _ = await repo.addDeposit(amount: 10000, bucketId: goal1.id, note: "Deposit")
+
         let initialGoals = await repo.getGoals()
+        XCTAssertEqual(initialGoals.count, 2)
 
         // Delete every bucket
         for goal in initialGoals {
@@ -203,6 +223,9 @@ final class CalculationTests: XCTestCase {
     func testClearAllTransactions() async {
         let repo = SavingsRepository()
         await repo.resetToDefaults()
+        let goal = await repo.createGoal(name: "Savings", target: 50000, colorHex: "#10B981", iconName: "star", category: "General")
+        _ = await repo.addDeposit(amount: 15000, bucketId: goal.id, note: "Deposit")
+
         await repo.clearAllTransactions()
 
         let txs = await repo.getTransactions()
@@ -216,5 +239,38 @@ final class CalculationTests: XCTestCase {
         let metrics = await repo.getFinancialMetrics()
         XCTAssertEqual(metrics.totalSavings, 0)
         XCTAssertEqual(metrics.currentMonthSaved, 0)
+    }
+
+    func testMonthlyRecordDeletionAndAverageRecalculation() async {
+        let repo = SavingsRepository()
+        await repo.resetToDefaults()
+
+        // Initially no monthly records
+        let initialMetrics = await repo.getFinancialMetrics()
+        XCTAssertEqual(initialMetrics.avgMonthly, 0)
+        XCTAssertEqual(initialMetrics.projectedAnnual, 0)
+
+        // Add a deposit to simulate month activity
+        let bucket = await repo.createGoal(name: "Investments", target: 100000, colorHex: "#10B981", iconName: "chart.line.uptrend.xyaxis", category: "Wealth")
+        _ = await repo.addDeposit(amount: 20000, bucketId: bucket.id, note: "Deposit 1")
+
+        let recordsBefore = await repo.getMonthlyRecords()
+        XCTAssertEqual(recordsBefore.count, 1)
+
+        let metrics1 = await repo.getFinancialMetrics()
+        XCTAssertEqual(metrics1.avgMonthly, 20000)
+        // 20000 + (20000 * 11) = 240000
+        XCTAssertEqual(metrics1.projectedAnnual, 240000)
+
+        // Delete the monthly record
+        let deleted = await repo.deleteMonthlyRecord(period: "2026-09")
+        XCTAssertTrue(deleted)
+
+        let recordsAfter = await repo.getMonthlyRecords()
+        XCTAssertTrue(recordsAfter.isEmpty)
+
+        let metricsAfter = await repo.getFinancialMetrics()
+        XCTAssertEqual(metricsAfter.avgMonthly, 0)
+        XCTAssertEqual(metricsAfter.projectedAnnual, 0)
     }
 }

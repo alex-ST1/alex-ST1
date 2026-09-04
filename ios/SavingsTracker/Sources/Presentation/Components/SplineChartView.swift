@@ -88,112 +88,127 @@ public struct SplineChartView: View {
 
             // Chart Canvas
             GeometryReader { geometry in
-                let points = computePoints(for: filteredRecords, in: geometry.size)
-
-                ZStack {
-                    // Target Reference Dashed Line
-                    if let targetY = computeTargetY(in: geometry.size) {
-                        Path { path in
-                            path.move(to: CGPoint(x: 0, y: targetY))
-                            path.addLine(to: CGPoint(x: geometry.size.width, y: targetY))
-                        }
-                        .stroke(AppTheme.amber.opacity(0.55), style: StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
-
-                        Text("Target \(currency.format(amount: targetGoal))")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(AppTheme.amber.opacity(0.85))
-                            .position(x: geometry.size.width - 45, y: targetY - 8)
+                if filteredRecords.isEmpty {
+                    VStack(spacing: 8) {
+                        Image(systemName: "chart.line.uptrend.xyaxis")
+                            .font(.system(size: 28))
+                            .foregroundColor(AppTheme.textSecondary.opacity(0.4))
+                        Text("No Historical Progression")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(AppTheme.textSecondary)
+                        Text("Monthly progression will appear here as savings are logged.")
+                            .font(.system(size: 11))
+                            .foregroundColor(AppTheme.textMuted)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    let points = computePoints(for: filteredRecords, in: geometry.size)
 
-                    // Curved Gradient Area
-                    if points.count >= 2 {
-                        SplineAreaShape(points: points, bottomY: geometry.size.height - 24)
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        AppTheme.emerald.opacity(0.35),
-                                        AppTheme.emerald.opacity(0.08),
-                                        Color.clear
-                                    ],
-                                    startPoint: .top,
-                                    endPoint: .bottom
+                    ZStack {
+                        // Target Reference Dashed Line
+                        if let targetY = computeTargetY(in: geometry.size) {
+                            Path { path in
+                                path.move(to: CGPoint(x: 0, y: targetY))
+                                path.addLine(to: CGPoint(x: geometry.size.width, y: targetY))
+                            }
+                            .stroke(AppTheme.amber.opacity(0.55), style: StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
+
+                            Text("Target \(currency.format(amount: targetGoal))")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(AppTheme.amber.opacity(0.85))
+                                .position(x: geometry.size.width - 45, y: targetY - 8)
+                        }
+
+                        // Curved Gradient Area
+                        if points.count >= 2 {
+                            SplineAreaShape(points: points, bottomY: geometry.size.height - 24)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            AppTheme.emerald.opacity(0.35),
+                                            AppTheme.emerald.opacity(0.08),
+                                            Color.clear
+                                        ],
+                                        startPoint: .top,
+                                        endPoint: .bottom
+                                    )
                                 )
-                            )
 
-                        // Curved Stroke Line
-                        SplineLineShape(points: points)
-                            .stroke(
-                                LinearGradient(
-                                    colors: [AppTheme.emerald, AppTheme.emeraldLight],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                ),
-                                style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round)
-                            )
-                    }
-
-                    // Interactive Point Markers & Labels
-                    ForEach(Array(points.enumerated()), id: \.offset) { index, point in
-                        let isLast = index == points.count - 1
-                        let isSelected = selectedIndex == index || (selectedIndex == nil && isLast)
-
-                        // Outer Glow Ring
-                        Circle()
-                            .stroke(AppTheme.emerald, lineWidth: isSelected ? 2.5 : 1.5)
-                            .background(Circle().fill(AppTheme.background))
-                            .frame(width: isSelected ? 12 : 8, height: isSelected ? 12 : 8)
-                            .position(point)
-                            .shadow(color: AppTheme.emerald.opacity(isSelected ? 0.6 : 0), radius: 6)
-
-                        // Month Label
-                        if index < filteredRecords.count {
-                            Text(filteredRecords[index].shortLabel.prefix(3))
-                                .font(.system(size: 10, weight: isSelected ? .bold : .medium))
-                                .foregroundColor(isSelected ? AppTheme.emeraldLight : AppTheme.textSecondary)
-                                .position(x: point.x, y: geometry.size.height - 8)
-                        }
-                    }
-
-                    // Active Tooltip HUD
-                    if let activeIdx = selectedIndex ?? (filteredRecords.isEmpty ? nil : filteredRecords.count - 1),
-                       activeIdx < points.count && activeIdx < filteredRecords.count {
-                        let activeRecord = filteredRecords[activeIdx]
-                        let point = points[activeIdx]
-
-                        VStack(spacing: 2) {
-                            Text(activeRecord.shortLabel)
-                                .font(.system(size: 10, weight: .semibold))
-                                .foregroundColor(AppTheme.textSecondary)
-                            Text(currency.format(amount: activeRecord.saved))
-                                .font(.system(size: 13, weight: .black))
-                                .foregroundColor(AppTheme.emeraldLight)
-                                .monospacedDigit()
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(AppTheme.cardBackground)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .stroke(AppTheme.emerald.opacity(0.3), lineWidth: 1)
+                            // Curved Stroke Line
+                            SplineLineShape(points: points)
+                                .stroke(
+                                    LinearGradient(
+                                        colors: [AppTheme.emerald, AppTheme.emeraldLight],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    ),
+                                    style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round)
                                 )
-                                .shadow(color: .black.opacity(0.5), radius: 8)
-                        )
-                        .position(x: min(max(point.x, 60), geometry.size.width - 60), y: max(22, point.y - 32))
-                    }
-                }
-                .contentShape(Rectangle())
-                .gesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { value in
-                            let closest = points.enumerated().min(by: { abs($0.element.x - value.location.x) < abs($1.element.x - value.location.x) })
-                            if let newIndex = closest?.offset, newIndex != selectedIndex {
-                                selectedIndex = newIndex
-                                AppTheme.triggerHaptic(style: .light)
+                        }
+
+                        // Interactive Point Markers & Labels
+                        ForEach(Array(points.enumerated()), id: \.offset) { index, point in
+                            let isLast = index == points.count - 1
+                            let isSelected = selectedIndex == index || (selectedIndex == nil && isLast)
+
+                            // Outer Glow Ring
+                            Circle()
+                                .stroke(AppTheme.emerald, lineWidth: isSelected ? 2.5 : 1.5)
+                                .background(Circle().fill(AppTheme.background))
+                                .frame(width: isSelected ? 12 : 8, height: isSelected ? 12 : 8)
+                                .position(point)
+                                .shadow(color: AppTheme.emerald.opacity(isSelected ? 0.6 : 0), radius: 6)
+
+                            // Month Label
+                            if index < filteredRecords.count {
+                                Text(filteredRecords[index].shortLabel.prefix(3))
+                                    .font(.system(size: 10, weight: isSelected ? .bold : .medium))
+                                    .foregroundColor(isSelected ? AppTheme.emeraldLight : AppTheme.textSecondary)
+                                    .position(x: point.x, y: geometry.size.height - 8)
                             }
                         }
-                )
+
+                        // Active Tooltip HUD
+                        if let activeIdx = selectedIndex ?? (filteredRecords.isEmpty ? nil : filteredRecords.count - 1),
+                           activeIdx < points.count && activeIdx < filteredRecords.count {
+                            let activeRecord = filteredRecords[activeIdx]
+                            let point = points[activeIdx]
+
+                            VStack(spacing: 2) {
+                                Text(activeRecord.shortLabel)
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .foregroundColor(AppTheme.textSecondary)
+                                Text(currency.format(amount: activeRecord.saved))
+                                    .font(.system(size: 13, weight: .black))
+                                    .foregroundColor(AppTheme.emeraldLight)
+                                    .monospacedDigit()
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(AppTheme.cardBackground)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(AppTheme.emerald.opacity(0.3), lineWidth: 1)
+                                    )
+                                    .shadow(color: .black.opacity(0.5), radius: 8)
+                            )
+                            .position(x: min(max(point.x, 60), geometry.size.width - 60), y: max(22, point.y - 32))
+                        }
+                    }
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                let closest = points.enumerated().min(by: { abs($0.element.x - value.location.x) < abs($1.element.x - value.location.x) })
+                                if let newIndex = closest?.offset, newIndex != selectedIndex {
+                                    selectedIndex = newIndex
+                                    AppTheme.triggerHaptic(style: .light)
+                                }
+                            }
+                    )
+                }
             }
             .frame(height: 180)
         }
@@ -204,7 +219,7 @@ public struct SplineChartView: View {
     // MARK: - Point & Curve Computation
 
     private func computePoints(for records: [MonthlyRecord], in size: CGSize) -> [CGPoint] {
-        guard records.count > 1 else { return [] }
+        guard !records.isEmpty else { return [] }
 
         let padLeft: CGFloat = 16
         let padRight: CGFloat = 16
@@ -218,6 +233,12 @@ public struct SplineChartView: View {
 
         let width = size.width - padLeft - padRight
         let chartHeight = bottomY - padTop
+
+        if records.count == 1 {
+            let normY = CGFloat((records[0].saved as NSDecimalNumber).doubleValue / maxVal)
+            let y = bottomY - (normY * chartHeight)
+            return [CGPoint(x: size.width / 2, y: y)]
+        }
 
         return records.enumerated().map { index, record in
             let x = padLeft + (CGFloat(index) / CGFloat(records.count - 1)) * width

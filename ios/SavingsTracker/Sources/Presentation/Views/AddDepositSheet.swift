@@ -7,15 +7,14 @@ public struct AddDepositSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var amountText: String = "1000"
-    @State private var selectedBucketId: String = "emergency"
+    @State private var selectedBucketId: String = ""
     @State private var noteText: String = ""
     @State private var localError: String? = nil
 
     public init(viewModel: DashboardViewModel, initialBucketId: String? = nil) {
         self.viewModel = viewModel
-        if let bId = initialBucketId {
-            self._selectedBucketId = State(initialValue: bId)
-        }
+        let bId = initialBucketId ?? viewModel.goals.first?.id ?? ""
+        self._selectedBucketId = State(initialValue: bId)
     }
 
     private let quickDenominations: [Decimal] = [500, 1000, 2500, 5000]
@@ -57,6 +56,11 @@ public struct AddDepositSheet: View {
         .presentationDetents([.fraction(0.85), .large])
         .presentationDragIndicator(.visible)
         .preferredColorScheme(.dark)
+        .onAppear {
+            if selectedBucketId.isEmpty || !viewModel.goals.contains(where: { $0.id == selectedBucketId }) {
+                selectedBucketId = viewModel.goals.first?.id ?? ""
+            }
+        }
     }
 
     // MARK: - Subviews
@@ -134,9 +138,23 @@ public struct AddDepositSheet: View {
                 .foregroundColor(AppTheme.textSecondary)
                 .tracking(0.6)
 
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                ForEach(viewModel.goals) { goal in
-                    bucketChip(goal)
+            if viewModel.goals.isEmpty {
+                HStack(spacing: 10) {
+                    Image(systemName: "info.circle.fill")
+                        .foregroundColor(AppTheme.emeraldLight)
+                        .font(.system(size: 16))
+                    Text("No buckets created yet. This deposit will automatically create a 'General Savings' bucket.")
+                        .font(.system(size: 12))
+                        .foregroundColor(AppTheme.textSecondary)
+                }
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .glassCard(cornerRadius: 14)
+            } else {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                    ForEach(viewModel.goals) { goal in
+                        bucketChip(goal)
+                    }
                 }
             }
         }

@@ -21,6 +21,8 @@ public final class DashboardViewModel: ObservableObject {
     @Published public var isDeleteConfirmationPresented: Bool = false
     @Published public var transactionToDelete: SavingsTransaction? = nil
     @Published public var isDeleteTxConfirmationPresented: Bool = false
+    @Published public var monthRecordToDelete: MonthlyRecord? = nil
+    @Published public var isDeleteMonthRecordConfirmationPresented: Bool = false
 
     // Animation & Feedback States
     @Published public var isHeroCardHighlighted: Bool = false
@@ -235,6 +237,33 @@ public final class DashboardViewModel: ObservableObject {
             await self.repository.clearAllTransactions()
             await self.loadData()
             AppTheme.playDeleteSound()
+        }
+    }
+
+    // MARK: - Monthly Archive Deletion
+
+    /// Prompts user to confirm deletion of a historical monthly record.
+    public func promptDeleteMonthlyRecord(_ record: MonthlyRecord) {
+        self.monthRecordToDelete = record
+        self.isDeleteMonthRecordConfirmationPresented = true
+        AppTheme.triggerHaptic(style: .medium)
+    }
+
+    /// Confirms deletion of the staged monthly record.
+    public func confirmDeleteMonthlyRecord() {
+        guard let record = monthRecordToDelete else { return }
+        deleteMonthlyRecord(period: record.period)
+        self.monthRecordToDelete = nil
+        self.isDeleteMonthRecordConfirmationPresented = false
+    }
+
+    /// Deletes a monthly record by period, updating monthly average, projected annual, and spline trajectory.
+    public func deleteMonthlyRecord(period: String) {
+        Task {
+            _ = await self.repository.deleteMonthlyRecord(period: period)
+            await self.loadData()
+            AppTheme.playDeleteSound()
+            AppTheme.triggerNotificationHaptic(type: .success)
         }
     }
 

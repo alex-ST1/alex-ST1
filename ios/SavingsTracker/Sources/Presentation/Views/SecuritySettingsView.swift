@@ -159,7 +159,7 @@ public struct SecuritySettingsView: View {
                         HStack {
                             Image(systemName: "trash.fill")
                                 .frame(width: 20)
-                            Text("Reset Vault to Default Sample Data")
+                            Text("Erase All Data & Start Fresh")
                                 .font(.system(size: 13, weight: .semibold))
                         }
                     }
@@ -245,17 +245,17 @@ public struct SecuritySettingsView: View {
                 AboutSheet()
             }
             .confirmationDialog(
-                "Reset Vault Data?",
+                "Erase All Vault Data?",
                 isPresented: $isWipeConfirmationPresented,
                 titleVisibility: .visible
             ) {
-                Button("Reset Data", role: .destructive) {
+                Button("Erase All Data", role: .destructive) {
                     viewModel.resetData()
                     AppTheme.triggerNotificationHaptic(type: .success)
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("This will wipe all existing transaction records and restore the default INR savings structure.")
+                Text("This will wipe all existing transactions, buckets, and monthly history, giving you a completely clean slate for your own entries.")
             }
         }
     }
