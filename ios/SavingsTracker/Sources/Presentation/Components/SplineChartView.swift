@@ -228,7 +228,7 @@ public struct SplineChartView: View {
     }
 
     private func computeTargetY(in size: CGSize) -> CGFloat? {
-        guard let maxSaved = filteredRecords.map({ $0.saved }).max() else { return nil }
+        guard targetGoal > 0, let maxSaved = filteredRecords.map({ $0.saved }).max() else { return nil }
         let maxBaseline = max(targetGoal, Decimal(25000))
         let maxDecimal = max(maxSaved, maxBaseline)
         let maxVal = NSDecimalNumber(decimal: maxDecimal).doubleValue * 1.15

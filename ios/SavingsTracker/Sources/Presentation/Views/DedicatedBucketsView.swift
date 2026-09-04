@@ -50,7 +50,44 @@ public struct DedicatedBucketsView: View {
                     .padding(.top, 4)
 
                     // Bucket Cards
-                    ForEach(viewModel.goals) { goal in
+                    if viewModel.goals.isEmpty {
+                        VStack(spacing: 16) {
+                            Image(systemName: "archivebox")
+                                .font(.system(size: 42))
+                                .foregroundColor(AppTheme.textMuted)
+                                .padding(.top, 36)
+
+                            VStack(spacing: 6) {
+                                Text("No Buckets Created")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(.white)
+                                Text("Create dedicated savings buckets (e.g. Emergency Fund, Investments, Travel) to organize and track your goals.")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(AppTheme.textSecondary)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 24)
+                            }
+
+                            Button {
+                                AppTheme.playTapSound()
+                                viewModel.isCreateBucketModalPresented = true
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "plus.circle.fill")
+                                    Text("Create First Bucket")
+                                }
+                                .font(.system(size: 13, weight: .bold))
+                                .padding(.horizontal, 18)
+                                .padding(.vertical, 10)
+                                .background(AppTheme.emerald)
+                                .foregroundColor(.black)
+                                .cornerRadius(12)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 24)
+                    } else {
+                        ForEach(viewModel.goals) { goal in
                         let isHighlighted = viewModel.highlightedBucketId == goal.id
 
                         VStack(alignment: .leading, spacing: 14) {
@@ -199,6 +236,7 @@ public struct DedicatedBucketsView: View {
                             }
                         }
                     }
+                    }
                 }
                 .padding(18)
             }
@@ -220,7 +258,7 @@ public struct DedicatedBucketsView: View {
                 }
             } message: {
                 if let goal = viewModel.bucketToDelete {
-                    Text("Are you sure you want to delete '\(goal.name)'? Transactions will be reassigned safely to General Savings.")
+                    Text("Are you sure you want to delete '\(goal.name)'? Balances and goal progress will be recalculated immediately.")
                 } else {
                     Text("Are you sure you want to delete this bucket?")
                 }

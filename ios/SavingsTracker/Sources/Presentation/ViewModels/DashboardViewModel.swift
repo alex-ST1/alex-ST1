@@ -19,6 +19,8 @@ public final class DashboardViewModel: ObservableObject {
     @Published public var bucketToEdit: SavingsGoal? = nil
     @Published public var bucketToDelete: SavingsGoal? = nil
     @Published public var isDeleteConfirmationPresented: Bool = false
+    @Published public var transactionToDelete: SavingsTransaction? = nil
+    @Published public var isDeleteTxConfirmationPresented: Bool = false
 
     // Animation & Feedback States
     @Published public var isHeroCardHighlighted: Bool = false
@@ -195,6 +197,42 @@ public final class DashboardViewModel: ObservableObject {
     public func deleteBucket(id: String) {
         Task {
             _ = await self.repository.deleteGoal(id: id)
+            await self.loadData()
+            AppTheme.playDeleteSound()
+        }
+    }
+
+    // MARK: - Transaction Deletion & Management
+
+    /// Prompts user to confirm deletion of a specific transaction entry.
+    public func promptDeleteTransaction(_ tx: SavingsTransaction) {
+        self.transactionToDelete = tx
+        self.isDeleteTxConfirmationPresented = true
+        AppTheme.triggerHaptic(style: .medium)
+    }
+
+    /// Confirms deletion of the staged transaction.
+    public func confirmDeleteTransaction() {
+        guard let tx = transactionToDelete else { return }
+        deleteTransaction(id: tx.id)
+        self.transactionToDelete = nil
+        self.isDeleteTxConfirmationPresented = false
+    }
+
+    /// Deletes a transaction by ID, restores bucket balance, and refreshes all metrics.
+    public func deleteTransaction(id: String) {
+        Task {
+            _ = await self.repository.deleteTransaction(id: id)
+            await self.loadData()
+            AppTheme.playDeleteSound()
+            AppTheme.triggerNotificationHaptic(type: .success)
+        }
+    }
+
+    /// Clears all transactions and resets bucket balances.
+    public func clearAllEntries() {
+        Task {
+            await self.repository.clearAllTransactions()
             await self.loadData()
             AppTheme.playDeleteSound()
         }

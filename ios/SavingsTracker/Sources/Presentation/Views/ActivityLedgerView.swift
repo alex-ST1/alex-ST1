@@ -78,18 +78,36 @@ public struct ActivityLedgerView: View {
                     .glassCard(cornerRadius: 18)
 
                     // Transactions Audit List
-                    Text("TRANSACTION AUDIT LOG (\(viewModel.transactions.count))")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(AppTheme.textSecondary)
-                        .tracking(0.6)
-                        .padding(.top, 4)
+                    HStack {
+                        Text("TRANSACTION AUDIT LOG (\(viewModel.transactions.count))")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(AppTheme.textSecondary)
+                            .tracking(0.6)
+
+                        Spacer()
+
+                        if !viewModel.transactions.isEmpty {
+                            Text("Tap trash to remove")
+                                .font(.system(size: 9))
+                                .foregroundColor(AppTheme.textMuted)
+                        }
+                    }
+                    .padding(.top, 4)
 
                     if viewModel.transactions.isEmpty {
-                        Text("No transactions recorded yet.")
-                            .font(.system(size: 12))
-                            .foregroundColor(AppTheme.textMuted)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding(.vertical, 32)
+                        VStack(spacing: 8) {
+                            Image(systemName: "tray")
+                                .font(.system(size: 28))
+                                .foregroundColor(AppTheme.textMuted)
+                            Text("No transactions recorded yet.")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(AppTheme.textSecondary)
+                            Text("Add deposits using the '+' button to log activity.")
+                                .font(.system(size: 11))
+                                .foregroundColor(AppTheme.textMuted)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 36)
                     } else {
                         ForEach(viewModel.transactions) { tx in
                             HStack(spacing: 12) {
@@ -119,6 +137,18 @@ public struct ActivityLedgerView: View {
                                     .font(.system(size: 14, weight: .heavy))
                                     .foregroundColor(AppTheme.emeraldLight)
                                     .monospacedDigit()
+
+                                Button {
+                                    viewModel.promptDeleteTransaction(tx)
+                                } label: {
+                                    Image(systemName: "trash")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(AppTheme.rose.opacity(0.85))
+                                        .padding(7)
+                                        .background(AppTheme.rose.opacity(0.12))
+                                        .clipShape(Circle())
+                                }
+                                .buttonStyle(.plain)
                             }
                             .padding(14)
                             .background(Color.white.opacity(0.03))
@@ -127,6 +157,13 @@ public struct ActivityLedgerView: View {
                                 RoundedRectangle(cornerRadius: 16)
                                     .stroke(Color.white.opacity(0.06), lineWidth: 1)
                             )
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    viewModel.promptDeleteTransaction(tx)
+                                } label: {
+                                    Label("Remove Deposit Entry", systemImage: "trash")
+                                }
+                            }
                         }
                     }
                 }
@@ -134,6 +171,18 @@ public struct ActivityLedgerView: View {
             }
             .background(AppTheme.background.ignoresSafeArea())
             .darkNavigationBar()
+            .alert(
+                "Remove Entry?",
+                isPresented: $viewModel.isDeleteTxConfirmationPresented,
+                presenting: viewModel.transactionToDelete
+            ) { tx in
+                Button("Cancel", role: .cancel) {}
+                Button("Remove Entry", role: .destructive) {
+                    viewModel.confirmDeleteTransaction()
+                }
+            } message: { tx in
+                Text("Are you sure you want to remove this deposit of \(viewModel.metrics.currency.format(amount: tx.amount)) from \(tx.bucketName)? This will recalculate your balances and progress.")
+            }
         }
     }
 }

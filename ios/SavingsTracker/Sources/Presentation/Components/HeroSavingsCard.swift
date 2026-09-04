@@ -113,7 +113,7 @@ public struct HeroSavingsCard: View {
                                 )
                             )
                             .frame(
-                                width: geometry.size.width * CGFloat(min(1.0, Double(metrics.progressPercent) / 100.0)),
+                                width: geometry.size.width * CGFloat(metrics.currentGoal > 0 ? min(1.0, Double(metrics.progressPercent) / 100.0) : 0.0),
                                 height: 10
                             )
                             .animation(.spring(response: 0.6, dampingFraction: 0.8), value: metrics.progressPercent)
@@ -122,14 +122,25 @@ public struct HeroSavingsCard: View {
                 .frame(height: 10)
 
                 HStack {
-                    Text("Target: \(metrics.currency.format(amount: metrics.currentGoal))")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(AppTheme.textSecondary)
-                    Spacer()
-                    Text("\(metrics.progressPercent)% of Goal")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(AppTheme.emeraldLight)
-                        .monospacedDigit()
+                    if metrics.currentGoal > 0 {
+                        Text("Target: \(metrics.currency.format(amount: metrics.currentGoal))")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(AppTheme.textSecondary)
+                        Spacer()
+                        Text("\(metrics.progressPercent)% of Goal")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(AppTheme.emeraldLight)
+                            .monospacedDigit()
+                    } else {
+                        Text("No Active Goals • Tap Buckets to add goals")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(AppTheme.textMuted)
+                        Spacer()
+                        Text("0% of Goal")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(AppTheme.textMuted)
+                            .monospacedDigit()
+                    }
                 }
             }
 

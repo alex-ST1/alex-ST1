@@ -148,36 +148,71 @@ public struct DashboardView: View {
                                 .foregroundColor(AppTheme.textSecondary)
                             }
 
-                            ForEach(viewModel.transactions.prefix(3)) { tx in
-                                HStack(spacing: 12) {
-                                    ZStack {
-                                        Circle()
-                                            .fill(AppTheme.emerald.opacity(0.15))
-                                            .frame(width: 32, height: 32)
-                                        Image(systemName: "plus")
-                                            .font(.system(size: 11, weight: .bold))
-                                            .foregroundColor(AppTheme.emeraldLight)
-                                    }
-
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(tx.note)
-                                            .font(.system(size: 12, weight: .bold))
-                                            .foregroundColor(.white)
-                                        Text(tx.bucketName)
-                                            .font(.system(size: 10))
-                                            .foregroundColor(AppTheme.textSecondary)
-                                    }
-
+                            if viewModel.transactions.isEmpty {
+                                HStack {
                                     Spacer()
-
-                                    Text("+\(viewModel.metrics.currency.format(amount: tx.amount))")
-                                        .font(.system(size: 13, weight: .heavy))
-                                        .foregroundColor(AppTheme.emeraldLight)
-                                        .monospacedDigit()
+                                    VStack(spacing: 4) {
+                                        Text("No deposits recorded")
+                                            .font(.system(size: 12, weight: .semibold))
+                                            .foregroundColor(AppTheme.textSecondary)
+                                        Text("Tap '+ Deposit' above to log your first deposit.")
+                                            .font(.system(size: 10))
+                                            .foregroundColor(AppTheme.textMuted)
+                                    }
+                                    .padding(.vertical, 16)
+                                    Spacer()
                                 }
-                                .padding(12)
-                                .background(Color.white.opacity(0.03))
-                                .cornerRadius(14)
+                            } else {
+                                ForEach(viewModel.transactions.prefix(3)) { tx in
+                                    HStack(spacing: 12) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(AppTheme.emerald.opacity(0.15))
+                                                .frame(width: 32, height: 32)
+                                            Image(systemName: "plus")
+                                                .font(.system(size: 11, weight: .bold))
+                                                .foregroundColor(AppTheme.emeraldLight)
+                                        }
+
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(tx.note)
+                                                .font(.system(size: 12, weight: .bold))
+                                                .foregroundColor(.white)
+                                            Text(tx.bucketName)
+                                                .font(.system(size: 10))
+                                                .foregroundColor(AppTheme.textSecondary)
+                                        }
+
+                                        Spacer()
+
+                                        Text("+\(viewModel.metrics.currency.format(amount: tx.amount))")
+                                            .font(.system(size: 13, weight: .heavy))
+                                            .foregroundColor(AppTheme.emeraldLight)
+                                            .monospacedDigit()
+
+                                        Button {
+                                            viewModel.promptDeleteTransaction(tx)
+                                        } label: {
+                                            Image(systemName: "trash")
+                                                .font(.system(size: 10))
+                                                .foregroundColor(AppTheme.rose.opacity(0.85))
+                                                .padding(6)
+                                                .background(AppTheme.rose.opacity(0.12))
+                                                .clipShape(Circle())
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                    .padding(12)
+                                    .background(Color.white.opacity(0.03))
+                                    .cornerRadius(14)
+                                    .contextMenu {
+                                        Button(role: .destructive) {
+                                            viewModel.promptDeleteTransaction(tx)
+                                        } label: {
+                                            Label("Remove Deposit Entry", systemImage: "trash")
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -266,6 +301,18 @@ public struct DashboardView: View {
         }
         .sheet(isPresented: $isAboutPresented) {
             AboutSheet()
+        }
+        .alert(
+            "Remove Entry?",
+            isPresented: $viewModel.isDeleteTxConfirmationPresented,
+            presenting: viewModel.transactionToDelete
+        ) { tx in
+            Button("Cancel", role: .cancel) {}
+            Button("Remove Entry", role: .destructive) {
+                viewModel.confirmDeleteTransaction()
+            }
+        } message: { tx in
+            Text("Are you sure you want to remove this deposit of \(viewModel.metrics.currency.format(amount: tx.amount)) from \(tx.bucketName)? This will recalculate your balances and progress.")
         }
         .onReceive(NotificationCenter.default.publisher(for: .init("SavingsTrackerDidUnlockWithPendingDeepLink"))) { notification in
             if let url = notification.object as? URL {

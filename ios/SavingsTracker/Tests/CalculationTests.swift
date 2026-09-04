@@ -139,4 +139,77 @@ final class CalculationTests: XCTestCase {
         XCTAssertNotNil(targetTx)
         XCTAssertNotEqual(targetTx?.bucketId, created.id)
     }
+
+    func testTransactionDeletionAndBalanceRecalculation() async {
+        let repo = SavingsRepository()
+        let metricsBefore = await repo.getFinancialMetrics()
+        let goalsBefore = await repo.getGoals()
+        let emergencyBefore = goalsBefore.first(where: { $0.id == "emergency" })?.current ?? 0
+
+        // Add a deposit
+        let depositTx = await repo.addDeposit(amount: 5000, bucketId: "emergency", note: "Test deposit for removal")
+        let metricsMid = await repo.getFinancialMetrics()
+        let goalsMid = await repo.getGoals()
+        let emergencyMid = goalsMid.first(where: { $0.id == "emergency" })?.current ?? 0
+
+        XCTAssertEqual(emergencyMid, emergencyBefore + 5000)
+        XCTAssertEqual(metricsMid.totalSavings, metricsBefore.totalSavings + 5000)
+        XCTAssertEqual(metricsMid.currentMonthSaved, metricsBefore.currentMonthSaved + 5000)
+
+        // Delete the deposit transaction
+        let deleted = await repo.deleteTransaction(id: depositTx.id)
+        XCTAssertTrue(deleted)
+
+        let metricsAfter = await repo.getFinancialMetrics()
+        let goalsAfter = await repo.getGoals()
+        let emergencyAfter = goalsAfter.first(where: { $0.id == "emergency" })?.current ?? 0
+        let txsAfter = await repo.getTransactions()
+
+        // Balances must exactly return to baseline
+        XCTAssertEqual(emergencyAfter, emergencyBefore)
+        XCTAssertEqual(metricsAfter.totalSavings, metricsBefore.totalSavings)
+        XCTAssertEqual(metricsAfter.currentMonthSaved, metricsBefore.currentMonthSaved)
+        XCTAssertFalse(txsAfter.contains(where: { $0.id == depositTx.id }))
+    }
+
+    func testAllBucketsRemovedGoalBarZero() async {
+        let repo = SavingsRepository()
+        let initialGoals = await repo.getGoals()
+
+        // Delete every bucket
+        for goal in initialGoals {
+            _ = await repo.deleteGoal(id: goal.id)
+        }
+
+        let remainingGoals = await repo.getGoals()
+        XCTAssertTrue(remainingGoals.isEmpty)
+
+        let metrics = await repo.getFinancialMetrics()
+        XCTAssertEqual(metrics.totalSavings, 0)
+        XCTAssertEqual(metrics.currentGoal, 0)
+        XCTAssertEqual(metrics.currentMonthSaved, 0)
+        XCTAssertEqual(metrics.progressPercent, 0)
+        XCTAssertEqual(metrics.activeBucketsCount, 0)
+        XCTAssertEqual(metrics.totalBucketTargets, 0)
+
+        let txs = await repo.getTransactions()
+        XCTAssertTrue(txs.isEmpty)
+    }
+
+    func testClearAllTransactions() async {
+        let repo = SavingsRepository()
+        await repo.clearAllTransactions()
+
+        let txs = await repo.getTransactions()
+        XCTAssertTrue(txs.isEmpty)
+
+        let goals = await repo.getGoals()
+        for g in goals {
+            XCTAssertEqual(g.current, 0)
+        }
+
+        let metrics = await repo.getFinancialMetrics()
+        XCTAssertEqual(metrics.totalSavings, 0)
+        XCTAssertEqual(metrics.currentMonthSaved, 0)
+    }
 }

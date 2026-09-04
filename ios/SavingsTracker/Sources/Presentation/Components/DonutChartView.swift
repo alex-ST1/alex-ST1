@@ -55,8 +55,54 @@ public struct DonutChartView: View {
                 Spacer()
             }
 
-            // Donut + Legend Layout
-            HStack(spacing: 16) {
+            if goals.isEmpty {
+                VStack(spacing: 8) {
+                    Image(systemName: "chart.pie")
+                        .font(.system(size: 24))
+                        .foregroundColor(AppTheme.textMuted)
+                    Text("No Active Buckets")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(AppTheme.textSecondary)
+                    Text("Create savings buckets to see your asset distribution.")
+                        .font(.system(size: 11))
+                        .foregroundColor(AppTheme.textMuted)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
+            } else if totalSavings == 0 {
+                HStack(spacing: 16) {
+                    ZStack {
+                        Circle()
+                            .stroke(Color.white.opacity(0.06), lineWidth: 12)
+                        VStack(spacing: 2) {
+                            Text("TOTAL")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(AppTheme.textSecondary)
+                            Text(currency.format(amount: 0))
+                                .font(.system(size: 12, weight: .black))
+                                .foregroundColor(.white)
+                            Text("0% Saved")
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundColor(AppTheme.textMuted)
+                        }
+                    }
+                    .frame(width: 126, height: 126)
+                    .flexShrinkZero()
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Buckets Created")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.white)
+                        Text("\(goals.count) active bucket\(goals.count == 1 ? "" : "s") awaiting deposits.")
+                            .font(.system(size: 10))
+                            .foregroundColor(AppTheme.textSecondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            } else {
+                // Donut + Legend Layout
+                HStack(spacing: 16) {
                 // Donut Ring (126x126 with 12pt stroke)
                 ZStack {
                     // Background track
@@ -133,6 +179,7 @@ public struct DonutChartView: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
+            }
             }
         }
         .padding(18)

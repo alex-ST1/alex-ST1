@@ -139,15 +139,38 @@ public actor SavingsRepository {
         return snapshot.monthlyRecords.values.sorted { $0.period < $1.period }
     }
 
+    private func period(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter.string(from: date)
+    }
+
     public func getFinancialMetrics() -> FinancialMetrics {
         let totalSavings = snapshot.goals.reduce(Decimal(0)) { $0 + $1.current }
-        let currentRecord = snapshot.monthlyRecords[snapshot.currentPeriod]
-        let currentSaved = currentRecord?.saved ?? 0
-        let currentGoal = currentRecord?.goal ?? snapshot.monthlyGoal
+        let totalBucketTargets = snapshot.goals.reduce(Decimal(0)) { $0 + $1.target }
+        let activeBucketsCount = snapshot.goals.count
 
-        let progressPercent = currentGoal > 0
-            ? min(100, Int(((currentSaved as NSDecimalNumber).doubleValue / (currentGoal as NSDecimalNumber).doubleValue * 100).rounded()))
-            : 0
+        let currentSaved: Decimal
+        let currentGoal: Decimal
+
+        if snapshot.goals.isEmpty {
+            currentSaved = 0
+            currentGoal = 0
+        } else {
+            let currentRecord = snapshot.monthlyRecords[snapshot.currentPeriod]
+            currentSaved = currentRecord?.saved ?? 0
+            let rawGoal = currentRecord?.goal ?? snapshot.monthlyGoal
+            currentGoal = totalBucketTargets > 0 ? min(rawGoal, totalBucketTargets) : rawGoal
+        }
+
+        let progressPercent: Int
+        if currentGoal > 0 {
+            let ratio = (currentSaved as NSDecimalNumber).doubleValue / (currentGoal as NSDecimalNumber).doubleValue
+            progressPercent = min(100, max(0, Int((ratio * 100).rounded())))
+        } else {
+            progressPercent = 0
+        }
 
         // Calculate Month-over-Month change
         let sortedPeriods = snapshot.monthlyRecords.keys.sorted()
@@ -174,7 +197,9 @@ public actor SavingsRepository {
             momRate: momRate,
             avgMonthly: avgMonthly,
             projectedAnnual: projectedAnnual,
-            currency: snapshot.currency
+            currency: snapshot.currency,
+            totalBucketTargets: totalBucketTargets,
+            activeBucketsCount: activeBucketsCount
         )
     }
 
@@ -285,13 +310,65 @@ public actor SavingsRepository {
         return true
     }
 
-    /// Deletes a savings bucket and safely reassigns existing transactions to retain audit integrity.
+    /// Deletes a specific transaction by ID, adjusts bucket balances and monthly records, and persists.
+    @discardableResult
+    public func deleteTransaction(id: String) -> Bool {
+        guard let idx = snapshot.transactions.firstIndex(where: { $0.id == id }) else {
+            return false
+        }
+        let tx = snapshot.transactions.remove(at: idx)
+
+        // 1. Decrement Goal Bucket
+        if let gIdx = snapshot.goals.firstIndex(where: { $0.id == tx.bucketId }) {
+            snapshot.goals[gIdx].current = max(0, snapshot.goals[gIdx].current - tx.amount)
+        }
+
+        // 2. Decrement Monthly Record
+        let txPeriod = period(for: tx.date)
+        let targetPeriod = snapshot.monthlyRecords[txPeriod] != nil ? txPeriod : snapshot.currentPeriod
+        if var record = snapshot.monthlyRecords[targetPeriod] {
+            record.saved = max(0, record.saved - tx.amount)
+            snapshot.monthlyRecords[targetPeriod] = record
+        }
+
+        saveData()
+        SecureLogger.finance.info("Transaction deleted: \(tx.id, privacy: .public), amount: \(tx.amount, privacy: .public)")
+        return true
+    }
+
+    /// Clears all recorded transactions and resets current bucket balances.
+    public func clearAllTransactions() {
+        snapshot.transactions.removeAll()
+        for i in 0..<snapshot.goals.count {
+            snapshot.goals[i].current = 0
+        }
+        if var record = snapshot.monthlyRecords[snapshot.currentPeriod] {
+            record.saved = 0
+            snapshot.monthlyRecords[snapshot.currentPeriod] = record
+        }
+        saveData()
+        SecureLogger.finance.info("All transactions cleared and bucket balances reset.")
+    }
+
+    /// Deletes a savings bucket and safely reassigns or clears transactions.
     @discardableResult
     public func deleteGoal(id: String) -> Bool {
         guard let idx = snapshot.goals.firstIndex(where: { $0.id == id }) else {
             return false
         }
         let deletedGoal = snapshot.goals.remove(at: idx)
+
+        // If no buckets remain, clear all transactions and reset monthly savings
+        if snapshot.goals.isEmpty {
+            snapshot.transactions.removeAll()
+            if var currentRec = snapshot.monthlyRecords[snapshot.currentPeriod] {
+                currentRec.saved = 0
+                snapshot.monthlyRecords[snapshot.currentPeriod] = currentRec
+            }
+            saveData()
+            SecureLogger.finance.info("All savings buckets removed. Cleared all related transactions and reset calculations.")
+            return true
+        }
 
         // Find fallback bucket (first remaining bucket or General)
         let fallback = snapshot.goals.first
