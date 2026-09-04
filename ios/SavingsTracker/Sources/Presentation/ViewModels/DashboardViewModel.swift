@@ -31,10 +31,10 @@ public final class DashboardViewModel: ObservableObject {
     }
 
     public func loadData() async {
-        self.metrics = await repository.getFinancialMetrics()
-        self.goals = await repository.getGoals()
-        self.monthlyRecords = await repository.getMonthlyRecords()
-        self.transactions = await repository.getTransactions()
+        self.metrics = await self.repository.getFinancialMetrics()
+        self.goals = await self.repository.getGoals()
+        self.monthlyRecords = await self.repository.getMonthlyRecords()
+        self.transactions = await self.repository.getTransactions()
     }
 
     /// Executes a verified deposit with strict validation.
@@ -64,8 +64,8 @@ public final class DashboardViewModel: ObservableObject {
             let targetGoal = self.metrics.currentGoal
 
             // 2. Perform Repository Mutation (actor-safe)
-            let tx = await repository.addDeposit(amount: amount, bucketId: bucketId, note: note)
-            await loadData()
+            let tx = await self.repository.addDeposit(amount: amount, bucketId: bucketId, note: note)
+            await self.loadData()
 
             // 3. Audio & Haptic Feedback
             AppTheme.triggerNotificationHaptic(type: .success)
@@ -105,15 +105,15 @@ public final class DashboardViewModel: ObservableObject {
 
     public func updateCurrency(_ newCurrency: CurrencyType) {
         Task {
-            await repository.updateCurrency(newCurrency)
-            await loadData()
+            await self.repository.updateCurrency(newCurrency)
+            await self.loadData()
         }
     }
 
     public func resetData() {
         Task {
-            await repository.resetToDefaults()
-            await loadData()
+            await self.repository.resetToDefaults()
+            await self.loadData()
         }
     }
 }

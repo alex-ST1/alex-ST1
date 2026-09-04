@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// Design System for Fintech Aesthetics, Glassmorphic Materials & Haptics.
 public enum AppTheme {
@@ -25,17 +28,32 @@ public enum AppTheme {
     public static let textMuted = Color(hex: "#64748B")
 
     // MARK: - Haptic Feedback
-    public static func triggerHaptic(style: UIImpactFeedbackGenerator.FeedbackStyle = .medium) {
+    #if os(iOS)
+    public typealias ImpactFeedbackStyle = UIImpactFeedbackGenerator.FeedbackStyle
+    public typealias NotificationFeedbackType = UINotificationFeedbackGenerator.FeedbackType
+
+    public static func triggerHaptic(style: ImpactFeedbackStyle = .medium) {
         let generator = UIImpactFeedbackGenerator(style: style)
         generator.prepare()
         generator.impactOccurred()
     }
 
-    public static func triggerNotificationHaptic(type: UINotificationFeedbackGenerator.FeedbackType = .success) {
+    public static func triggerNotificationHaptic(type: NotificationFeedbackType = .success) {
         let generator = UINotificationFeedbackGenerator()
         generator.prepare()
         generator.notificationOccurred(type)
     }
+    #else
+    public enum ImpactFeedbackStyle {
+        case light, medium, heavy, soft, rigid
+    }
+    public enum NotificationFeedbackType {
+        case success, warning, error
+    }
+
+    public static func triggerHaptic(style: ImpactFeedbackStyle = .medium) {}
+    public static func triggerNotificationHaptic(type: NotificationFeedbackType = .success) {}
+    #endif
 }
 
 // MARK: - Color Hex Initializer
