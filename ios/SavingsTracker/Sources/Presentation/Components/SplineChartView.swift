@@ -211,11 +211,10 @@ public struct SplineChartView: View {
         let padTop: CGFloat = 34
         let bottomY = size.height - 24
 
-        let maxVal = max(
-            (records.map { $0.saved }.max() ?? 0) as NSDecimalNumber,
-            targetGoal as NSDecimalNumber,
-            NSDecimalNumber(value: 25000)
-        ).doubleValue * 1.15
+        let maxRecord = records.map { $0.saved }.max() ?? Decimal.zero
+        let maxBaseline = max(targetGoal, Decimal(25000))
+        let maxDecimal = max(maxRecord, maxBaseline)
+        let maxVal = NSDecimalNumber(decimal: maxDecimal).doubleValue * 1.15
 
         let width = size.width - padLeft - padRight
         let chartHeight = bottomY - padTop
@@ -230,11 +229,9 @@ public struct SplineChartView: View {
 
     private func computeTargetY(in size: CGSize) -> CGFloat? {
         guard let maxSaved = filteredRecords.map({ $0.saved }).max() else { return nil }
-        let maxVal = max(
-            maxSaved as NSDecimalNumber,
-            targetGoal as NSDecimalNumber,
-            NSDecimalNumber(value: 25000)
-        ).doubleValue * 1.15
+        let maxBaseline = max(targetGoal, Decimal(25000))
+        let maxDecimal = max(maxSaved, maxBaseline)
+        let maxVal = NSDecimalNumber(decimal: maxDecimal).doubleValue * 1.15
 
         let padTop: CGFloat = 34
         let bottomY = size.height - 24

@@ -11,6 +11,7 @@ public enum SecureLogger {
     public static let finance = Logger(subsystem: subsystem, category: "Finance")
     public static let storage = Logger(subsystem: subsystem, category: "Storage")
     public static let ui = Logger(subsystem: subsystem, category: "UI")
+    public static let lifecycle = Logger(subsystem: subsystem, category: "Lifecycle")
 
     /// Logs general operational information safely without exposing monetary amounts.
     public static func logOperation(_ operation: String, category: Logger = finance) {

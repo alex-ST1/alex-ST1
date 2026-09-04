@@ -6,6 +6,12 @@ public struct DashboardView: View {
     @StateObject public var viewModel = DashboardViewModel()
     @State private var selectedTab: Int = 0
 
+    #if os(iOS)
+    private var headerPlacement: ToolbarItemPlacement { .topBarLeading }
+    #else
+    private var headerPlacement: ToolbarItemPlacement { .navigation }
+    #endif
+
     public init() {}
 
     public var body: some View {
@@ -177,9 +183,11 @@ public struct DashboardView: View {
                     .padding(18)
                 }
                 .background(AppTheme.background.ignoresSafeArea())
+                #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
+                #endif
                 .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
+                    ToolbarItem(placement: headerPlacement) {
                         HStack(spacing: 8) {
                             ZStack {
                                 Circle()
