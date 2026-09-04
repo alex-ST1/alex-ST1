@@ -29,5 +29,9 @@ targets:
     sources:
       - path: Sources
       - path: LaunchScreen.storyboard
+    settings:
+      base:
+        INFOPLIST_FILE: Info.plist
+        GENERATE_INFOPLIST_FILE: NO
     info:
       path: Info.plist

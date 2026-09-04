@@ -37,10 +37,31 @@ if [[ -z "$APP_PATH" || ! -d "$APP_PATH" ]]; then
   exit 1
 fi
 
-echo "==> Found App Bundle: $APP_PATH"
+# 4. Ensure Info.plist contains all required keys (launch screen, orientations, permissions)
+echo "==> Ensuring Info.plist contains all required runtime keys..."
+python3 -c "
+import plistlib, os
 
-# 4. Apply Ad-Hoc Signature
-echo "==> 3. Applying Ad-Hoc Signature..."
+app_plist_path = '$APP_PATH/Info.plist'
+with open(app_plist_path, 'rb') as f:
+    app_pl = plistlib.load(f)
+
+with open('Info.plist', 'rb') as f:
+    src_pl = plistlib.load(f)
+
+for k, v in src_pl.items():
+    if k not in app_pl:
+        app_pl[k] = v
+        print(f'Merged missing key: {k}')
+
+with open(app_plist_path, 'wb') as f:
+    plistlib.dump(app_pl, f)
+
+print('Verified and merged runtime Info.plist successfully.')
+"
+
+# 5. Apply Ad-Hoc Signature
+echo "==> 4. Applying Ad-Hoc Signature..."
 codesign --force --deep --sign - "$APP_PATH" || true
 
 # 5. Package into Standard IPA (Payload structure)
