@@ -114,7 +114,7 @@ public struct AddDepositSheet: View {
                 #if os(iOS)
                 .keyboardType(.decimalPad)
                 #endif
-                .onChange(of: amountText) { _ in
+                .onChange(of: amountText) { _, _ in
                     localError = nil
                 }
         }
