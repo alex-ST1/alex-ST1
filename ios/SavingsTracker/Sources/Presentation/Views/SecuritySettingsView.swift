@@ -10,6 +10,7 @@ public struct SecuritySettingsView: View {
     @State private var isWipeConfirmationPresented: Bool = false
     @State private var isLockToggleProcessing: Bool = false
     @State private var toggleErrorMessage: String? = nil
+    @State private var isAboutSheetPresented: Bool = false
 
     public init(viewModel: DashboardViewModel) {
         self.viewModel = viewModel
@@ -167,11 +168,82 @@ public struct SecuritySettingsView: View {
                         .font(.system(size: 10, weight: .bold))
                         .foregroundColor(AppTheme.textSecondary)
                 }
+
+                // Section 4: About & Developer
+                Section {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(AppTheme.emerald.opacity(0.18))
+                                .frame(width: 34, height: 34)
+                            Image(systemName: "person.fill")
+                                .foregroundColor(AppTheme.emeraldLight)
+                                .font(.system(size: 16))
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Author")
+                                .font(.system(size: 11))
+                                .foregroundColor(AppTheme.textSecondary)
+                            Text("Sagar Thapa")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                        Spacer()
+                    }
+
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(AppTheme.cyan.opacity(0.18))
+                                .frame(width: 34, height: 34)
+                            Image(systemName: "envelope.fill")
+                                .foregroundColor(AppTheme.cyan)
+                                .font(.system(size: 15))
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("E-mail")
+                                .font(.system(size: 11))
+                                .foregroundColor(AppTheme.textSecondary)
+                            Link("thapasagar102@gmail.com", destination: URL(string: "mailto:thapasagar102@gmail.com")!)
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(AppTheme.emeraldLight)
+                        }
+                        Spacer()
+                    }
+
+                    Button {
+                        isAboutSheetPresented = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "info.circle.fill")
+                                .foregroundColor(AppTheme.blue)
+                                .frame(width: 20)
+                            Text("About Savings Vault")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.white)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(AppTheme.textMuted)
+                        }
+                    }
+                } header: {
+                    Text("ABOUT & DEVELOPER")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(AppTheme.textSecondary)
+                } footer: {
+                    Text("Savings Vault • Created by Sagar Thapa (thapasagar102@gmail.com)")
+                        .font(.system(size: 11))
+                        .foregroundColor(AppTheme.textMuted)
+                }
             }
             .scrollContentBackground(.hidden)
             .background(AppTheme.background.ignoresSafeArea())
             .navigationTitle("Security & Privacy")
             .darkNavigationBar()
+            .sheet(isPresented: $isAboutSheetPresented) {
+                AboutSheet()
+            }
             .confirmationDialog(
                 "Reset Vault Data?",
                 isPresented: $isWipeConfirmationPresented,

@@ -5,6 +5,7 @@ public struct DashboardView: View {
 
     @StateObject public var viewModel = DashboardViewModel()
     @State private var selectedTab: Int = 0
+    @State private var isAboutPresented: Bool = false
 
     #if os(iOS)
     private var headerPlacement: ToolbarItemPlacement { .topBarLeading }
@@ -211,6 +212,19 @@ public struct DashboardView: View {
                             }
                         }
                     }
+
+                    #if os(iOS)
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            AppTheme.playTapSound()
+                            isAboutPresented = true
+                        } label: {
+                            Image(systemName: "info.circle")
+                                .font(.system(size: 17))
+                                .foregroundColor(AppTheme.textSecondary)
+                        }
+                    }
+                    #endif
                 }
             }
             .tabItem {
@@ -249,6 +263,9 @@ public struct DashboardView: View {
         .tint(AppTheme.emeraldLight)
         .sheet(isPresented: $viewModel.isAddModalPresented) {
             AddDepositSheet(viewModel: viewModel, initialBucketId: viewModel.selectedBucketForModal)
+        }
+        .sheet(isPresented: $isAboutPresented) {
+            AboutSheet()
         }
         .onReceive(NotificationCenter.default.publisher(for: .init("SavingsTrackerDidUnlockWithPendingDeepLink"))) { notification in
             if let url = notification.object as? URL {

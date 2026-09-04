@@ -37,10 +37,10 @@ if [[ -z "$APP_PATH" || ! -d "$APP_PATH" ]]; then
   exit 1
 fi
 
-# 4. Ensure Info.plist contains all required keys (launch screen, orientations, permissions)
+# 4. Ensure Info.plist contains all required keys (launch screen, orientations, permissions, icons)
 echo "==> Ensuring Info.plist contains all required runtime keys..."
 python3 -c "
-import plistlib, os
+import plistlib, os, glob, shutil
 
 app_plist_path = '$APP_PATH/Info.plist'
 with open(app_plist_path, 'rb') as f:
@@ -57,11 +57,15 @@ for k, v in src_pl.items():
 with open(app_plist_path, 'wb') as f:
     plistlib.dump(app_pl, f)
 
-print('Verified and merged runtime Info.plist successfully.')
+# Copy root AppIcon PNGs into bundle
+for icon_path in glob.glob('Sources/Resources/AppIcon*.png'):
+    shutil.copy(icon_path, '$APP_PATH/')
+
+print('Verified and merged runtime Info.plist and icon assets successfully.')
 "
 
 # 5. Apply Ad-Hoc Signature
-echo "==> 4. Applying Ad-Hoc Signature..."
+echo "==> 5. Applying Ad-Hoc Signature..."
 codesign --force --deep --sign - "$APP_PATH" || true
 
 # 5. Package into Standard IPA (Payload structure)
