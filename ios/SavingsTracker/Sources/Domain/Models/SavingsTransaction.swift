@@ -5,8 +5,8 @@ public struct SavingsTransaction: Identifiable, Codable, Equatable, Sendable {
     public let id: String
     public let date: Date
     public let amount: Decimal
-    public let bucketId: String
-    public let bucketName: String
+    public var bucketId: String
+    public var bucketName: String
     public let note: String
 
     public init(
