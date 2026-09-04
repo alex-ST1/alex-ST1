@@ -171,6 +171,9 @@ public struct SecuritySettingsView: View {
             .scrollContentBackground(.hidden)
             .background(AppTheme.background.ignoresSafeArea())
             .navigationTitle("Security & Privacy")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(AppTheme.background, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .confirmationDialog(
                 "Reset Vault Data?",
                 isPresented: $isWipeConfirmationPresented,

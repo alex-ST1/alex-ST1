@@ -11,9 +11,14 @@ public final class DashboardViewModel: ObservableObject {
     @Published public var monthlyRecords: [MonthlyRecord] = []
     @Published public var transactions: [SavingsTransaction] = []
 
+    // Modal & Sheet States
     @Published public var selectedTimeframe: String = "6M"
     @Published public var isAddModalPresented: Bool = false
     @Published public var selectedBucketForModal: String? = nil
+    @Published public var isCreateBucketModalPresented: Bool = false
+    @Published public var bucketToEdit: SavingsGoal? = nil
+    @Published public var bucketToDelete: SavingsGoal? = nil
+    @Published public var isDeleteConfirmationPresented: Bool = false
 
     // Animation & Feedback States
     @Published public var isHeroCardHighlighted: Bool = false
@@ -68,7 +73,7 @@ public final class DashboardViewModel: ObservableObject {
             await self.loadData()
 
             // 3. Audio & Haptic Feedback
-            AppTheme.triggerNotificationHaptic(type: .success)
+            AppTheme.playDepositSound()
 
             // 4. Trigger Rapid Reactive Flash & Counter Tweening
             withAnimation(.easeInOut(duration: 0.2)) {
@@ -88,6 +93,7 @@ public final class DashboardViewModel: ObservableObject {
             // 5. Celebration if Goal Target Passed
             if prevMonthSaved < targetGoal && self.metrics.currentMonthSaved >= targetGoal {
                 self.showConfettiCelebration = true
+                AppTheme.playCelebrationSound()
                 Task {
                     try? await Task.sleep(nanoseconds: 3_000_000_000)
                     self.showConfettiCelebration = false
@@ -101,6 +107,97 @@ public final class DashboardViewModel: ObservableObject {
     /// Quick deposit convenience method.
     public func quickDeposit(amount: Decimal, bucketId: String = "emergency") {
         deposit(rawAmount: "\(amount)", bucketId: bucketId, rawNote: "Quick Deposit")
+    }
+
+    // MARK: - Bucket Management
+
+    /// Creates a new dedicated savings bucket.
+    @discardableResult
+    public func createBucket(
+        name: String,
+        rawTarget: String,
+        colorHex: String,
+        iconName: String,
+        category: String
+    ) -> Bool {
+        let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanName.isEmpty else {
+            self.errorMessage = "Bucket name cannot be empty."
+            AppTheme.triggerNotificationHaptic(type: .error)
+            return false
+        }
+
+        let targetResult = InputSanitizer.validateAmount(rawTarget)
+        guard case .success(let target) = targetResult else {
+            if case .failure(let err) = targetResult {
+                self.errorMessage = err.localizedDescription
+                AppTheme.triggerNotificationHaptic(type: .error)
+            }
+            return false
+        }
+
+        Task {
+            _ = await self.repository.createGoal(
+                name: cleanName,
+                target: target,
+                colorHex: colorHex,
+                iconName: iconName,
+                category: category.isEmpty ? "Custom" : category
+            )
+            await self.loadData()
+            AppTheme.playDepositSound()
+        }
+        return true
+    }
+
+    /// Updates an existing bucket.
+    @discardableResult
+    public func updateBucket(
+        id: String,
+        name: String,
+        rawTarget: String,
+        colorHex: String,
+        iconName: String,
+        category: String
+    ) -> Bool {
+        let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanName.isEmpty else {
+            self.errorMessage = "Bucket name cannot be empty."
+            AppTheme.triggerNotificationHaptic(type: .error)
+            return false
+        }
+
+        let targetResult = InputSanitizer.validateAmount(rawTarget)
+        guard case .success(let target) = targetResult else {
+            if case .failure(let err) = targetResult {
+                self.errorMessage = err.localizedDescription
+                AppTheme.triggerNotificationHaptic(type: .error)
+            }
+            return false
+        }
+
+        Task {
+            _ = await self.repository.updateGoal(
+                id: id,
+                name: cleanName,
+                target: target,
+                colorHex: colorHex,
+                iconName: iconName,
+                category: category.isEmpty ? "Custom" : category
+            )
+            await self.loadData()
+            AppTheme.playTapSound()
+        }
+        return true
+    }
+
+    /// Deletes a bucket and safely reassigns associated transactions.
+    public func deleteBucket(id: String) {
+        Task {
+            _ = await self.repository.deleteGoal(id: id)
+            await self.loadData()
+            AppTheme.playDeleteSound()
+        }
     }
 
     public func updateCurrency(_ newCurrency: CurrencyType) {

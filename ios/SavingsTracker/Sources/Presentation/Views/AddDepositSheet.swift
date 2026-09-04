@@ -56,6 +56,7 @@ public struct AddDepositSheet: View {
         }
         .presentationDetents([.fraction(0.85), .large])
         .presentationDragIndicator(.visible)
+        .preferredColorScheme(.dark)
     }
 
     // MARK: - Subviews
@@ -81,7 +82,7 @@ public struct AddDepositSheet: View {
     private func denominationChip(_ denom: Decimal) -> some View {
         let isSelected = amountText == "\(denom)"
         Button {
-            AppTheme.triggerHaptic(style: .light)
+            AppTheme.playTapSound()
             amountText = "\(denom)"
             localError = nil
         } label: {
@@ -145,7 +146,7 @@ public struct AddDepositSheet: View {
     private func bucketChip(_ goal: SavingsGoal) -> some View {
         let isSelected = selectedBucketId == goal.id
         Button {
-            AppTheme.triggerHaptic(style: .light)
+            AppTheme.playTapSound()
             selectedBucketId = goal.id
         } label: {
             HStack(spacing: 8) {

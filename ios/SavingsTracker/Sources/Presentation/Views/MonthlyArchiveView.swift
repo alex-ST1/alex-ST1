@@ -13,10 +13,17 @@ public struct MonthlyArchiveView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    // Header Subtitle
-                    Text("Historical savings breakdown and target performance.")
-                        .font(.system(size: 13))
-                        .foregroundColor(AppTheme.textSecondary)
+                    // Header Title & Subtitle
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Monthly Archive")
+                            .font(.system(size: 24, weight: .black))
+                            .foregroundColor(.white)
+
+                        Text("Historical savings breakdown and target performance.")
+                            .font(.system(size: 12))
+                            .foregroundColor(AppTheme.textSecondary)
+                    }
+                    .padding(.top, 4)
 
                     // Month Records List (Newest First)
                     ForEach(viewModel.monthlyRecords.reversed()) { record in
@@ -90,7 +97,9 @@ public struct MonthlyArchiveView: View {
                 .padding(18)
             }
             .background(AppTheme.background.ignoresSafeArea())
-            .navigationTitle("Monthly Archive")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(AppTheme.background, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
         }
     }
 }

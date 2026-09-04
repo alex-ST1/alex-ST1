@@ -28,5 +28,6 @@ targets:
     deploymentTarget: "17.0"
     sources:
       - path: Sources
+      - path: LaunchScreen.storyboard
     info:
       path: Info.plist

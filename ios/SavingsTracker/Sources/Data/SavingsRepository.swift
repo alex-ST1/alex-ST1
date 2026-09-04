@@ -228,6 +228,94 @@ public actor SavingsRepository {
         saveData()
     }
 
+    // MARK: - Goal / Bucket Management
+
+    /// Creates a new custom savings bucket.
+    @discardableResult
+    public func createGoal(
+        name: String,
+        target: Decimal,
+        colorHex: String,
+        iconName: String,
+        category: String
+    ) -> SavingsGoal {
+        let newGoal = SavingsGoal(
+            id: UUID().uuidString.lowercased(),
+            name: name,
+            target: target,
+            current: 0,
+            colorHex: colorHex,
+            iconName: iconName,
+            category: category
+        )
+        snapshot.goals.append(newGoal)
+        saveData()
+        SecureLogger.finance.info("Custom savings bucket created: \(name, privacy: .public)")
+        return newGoal
+    }
+
+    /// Updates an existing savings bucket's metadata and target.
+    @discardableResult
+    public func updateGoal(
+        id: String,
+        name: String,
+        target: Decimal,
+        colorHex: String,
+        iconName: String,
+        category: String
+    ) -> Bool {
+        guard let idx = snapshot.goals.firstIndex(where: { $0.id == id }) else {
+            return false
+        }
+        snapshot.goals[idx].name = name
+        snapshot.goals[idx].target = target
+        snapshot.goals[idx].colorHex = colorHex
+        snapshot.goals[idx].iconName = iconName
+        snapshot.goals[idx].category = category
+
+        // Sync bucket name on existing transactions
+        for i in 0..<snapshot.transactions.count {
+            if snapshot.transactions[i].bucketId == id {
+                snapshot.transactions[i].bucketName = name
+            }
+        }
+
+        saveData()
+        SecureLogger.finance.info("Custom savings bucket updated: \(name, privacy: .public)")
+        return true
+    }
+
+    /// Deletes a savings bucket and safely reassigns existing transactions to retain audit integrity.
+    @discardableResult
+    public func deleteGoal(id: String) -> Bool {
+        guard let idx = snapshot.goals.firstIndex(where: { $0.id == id }) else {
+            return false
+        }
+        let deletedGoal = snapshot.goals.remove(at: idx)
+
+        // Find fallback bucket (first remaining bucket or General)
+        let fallback = snapshot.goals.first
+        let fallbackId = fallback?.id ?? "general"
+        let fallbackName = fallback?.name ?? "General Savings"
+
+        // If the deleted goal had saved funds, migrate funds to the fallback bucket
+        if deletedGoal.current > 0, let fIdx = snapshot.goals.firstIndex(where: { $0.id == fallbackId }) {
+            snapshot.goals[fIdx].current += deletedGoal.current
+        }
+
+        // Reassign transactions
+        for i in 0..<snapshot.transactions.count {
+            if snapshot.transactions[i].bucketId == id {
+                snapshot.transactions[i].bucketId = fallbackId
+                snapshot.transactions[i].bucketName = fallbackName
+            }
+        }
+
+        saveData()
+        SecureLogger.finance.info("Custom savings bucket deleted: \(deletedGoal.name, privacy: .public)")
+        return true
+    }
+
     public func resetToDefaults() {
         self.snapshot = SavingsRepository.createInitialSnapshot()
         saveData()

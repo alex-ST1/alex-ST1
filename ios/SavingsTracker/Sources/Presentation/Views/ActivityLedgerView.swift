@@ -20,6 +20,18 @@ public struct ActivityLedgerView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
+                    // Header Title & Subtitle
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Activity & Audit")
+                            .font(.system(size: 24, weight: .black))
+                            .foregroundColor(.white)
+
+                        Text("Transaction history, currency selection, and audit ledger.")
+                            .font(.system(size: 12))
+                            .foregroundColor(AppTheme.textSecondary)
+                    }
+                    .padding(.top, 4)
+
                     // Preferences Section
                     VStack(alignment: .leading, spacing: 12) {
                         Text("CURRENCY PREFERENCE")
@@ -31,7 +43,7 @@ public struct ActivityLedgerView: View {
                             ForEach(CurrencyType.allCases, id: \.self) { cur in
                                 let isSelected = viewModel.metrics.currency == cur
                                 Button {
-                                    AppTheme.triggerHaptic(style: .light)
+                                    AppTheme.playTapSound()
                                     viewModel.updateCurrency(cur)
                                 } label: {
                                     Text("\(cur.symbol) \(cur.rawValue)")
@@ -121,7 +133,9 @@ public struct ActivityLedgerView: View {
                 .padding(18)
             }
             .background(AppTheme.background.ignoresSafeArea())
-            .navigationTitle("Activity & Audit")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(AppTheme.background, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
         }
     }
 }

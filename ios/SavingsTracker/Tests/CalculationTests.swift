@@ -76,4 +76,67 @@ final class CalculationTests: XCTestCase {
         XCTAssertEqual(metrics.progressPercent, 74)
         XCTAssertEqual(metrics.currency, .inr)
     }
+
+    func testCustomBucketCreationAndUpdate() async {
+        let repo = SavingsRepository()
+        let created = await repo.createGoal(
+            name: "New Car Fund",
+            target: 500000,
+            colorHex: "#F97316",
+            iconName: "car.fill",
+            category: "Vehicle"
+        )
+
+        XCTAssertEqual(created.name, "New Car Fund")
+        XCTAssertEqual(created.target, 500000)
+        XCTAssertEqual(created.colorHex, "#F97316")
+
+        let allGoals = await repo.getGoals()
+        XCTAssertTrue(allGoals.contains(where: { $0.id == created.id }))
+
+        // Test update
+        let updated = await repo.updateGoal(
+            id: created.id,
+            name: "EV Car Fund",
+            target: 600000,
+            colorHex: "#10B981",
+            iconName: "car.side.fill",
+            category: "Automobile"
+        )
+        XCTAssertTrue(updated)
+
+        let goalsAfterUpdate = await repo.getGoals()
+        let updatedGoal = goalsAfterUpdate.first(where: { $0.id == created.id })
+        XCTAssertEqual(updatedGoal?.name, "EV Car Fund")
+        XCTAssertEqual(updatedGoal?.target, 600000)
+    }
+
+    func testCustomBucketDeletionAndReassignment() async {
+        let repo = SavingsRepository()
+        let created = await repo.createGoal(
+            name: "Temporary Bucket",
+            target: 10000,
+            colorHex: "#A855F7",
+            iconName: "gift.fill",
+            category: "Gifts"
+        )
+
+        _ = await repo.addDeposit(amount: 3000, bucketId: created.id, note: "Gift savings")
+
+        let txsBefore = await repo.getTransactions()
+        XCTAssertTrue(txsBefore.contains(where: { $0.bucketId == created.id }))
+
+        // Delete goal
+        let deleted = await repo.deleteGoal(id: created.id)
+        XCTAssertTrue(deleted)
+
+        let goalsAfter = await repo.getGoals()
+        XCTAssertFalse(goalsAfter.contains(where: { $0.id == created.id }))
+
+        // Audit integrity: transactions should now be reassigned to fallback
+        let txsAfter = await repo.getTransactions()
+        let targetTx = txsAfter.first(where: { $0.note == "Gift savings" })
+        XCTAssertNotNil(targetTx)
+        XCTAssertNotEqual(targetTx?.bucketId, created.id)
+    }
 }

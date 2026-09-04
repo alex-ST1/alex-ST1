@@ -20,3 +20,9 @@ DerivedData/
 *.log
 *.swp
 *.bak
+
+# Local Sideloading & Wine Environment
+.wine/
+downloads/
+run_sideloadly.sh
+

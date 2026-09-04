@@ -40,7 +40,7 @@ public struct DashboardView: View {
                             Spacer()
 
                             Button {
-                                AppTheme.triggerHaptic(style: .medium)
+                                AppTheme.playTapSound()
                                 viewModel.selectedBucketForModal = "emergency"
                                 viewModel.isAddModalPresented = true
                             } label: {
@@ -186,6 +186,8 @@ public struct DashboardView: View {
                 #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
                 #endif
+                .toolbarBackground(AppTheme.background, for: .navigationBar)
+                .toolbarColorScheme(.dark, for: .navigationBar)
                 .toolbar {
                     ToolbarItem(placement: headerPlacement) {
                         HStack(spacing: 8) {

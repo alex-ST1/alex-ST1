@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Dedicated Savings Buckets and Goals with individual progress meters.
+/// Dedicated Savings Buckets and Goals with individual progress meters and full customization.
 public struct DedicatedBucketsView: View {
 
     @ObservedObject public var viewModel: DashboardViewModel
@@ -13,10 +13,43 @@ public struct DedicatedBucketsView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Track allocation and milestones across dedicated funds.")
-                        .font(.system(size: 13))
-                        .foregroundColor(AppTheme.textSecondary)
+                    // Subtitle & Add Bucket Row
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Dedicated Funds")
+                                .font(.system(size: 24, weight: .black))
+                                .foregroundColor(.white)
+                            Text("Track allocation and milestones across dedicated funds.")
+                                .font(.system(size: 12))
+                                .foregroundColor(AppTheme.textSecondary)
+                        }
 
+                        Spacer()
+
+                        Button {
+                            AppTheme.playTapSound()
+                            viewModel.isCreateBucketModalPresented = true
+                        } label: {
+                            HStack(spacing: 5) {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 11, weight: .bold))
+                                Text("New")
+                                    .font(.system(size: 12, weight: .bold))
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(AppTheme.emerald.opacity(0.18))
+                            .foregroundColor(AppTheme.emeraldLight)
+                            .cornerRadius(12)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(AppTheme.emerald.opacity(0.3), lineWidth: 1)
+                            )
+                        }
+                    }
+                    .padding(.top, 4)
+
+                    // Bucket Cards
                     ForEach(viewModel.goals) { goal in
                         let isHighlighted = viewModel.highlightedBucketId == goal.id
 
@@ -49,26 +82,46 @@ public struct DedicatedBucketsView: View {
 
                                 Spacer()
 
-                                Button {
-                                    AppTheme.triggerHaptic(style: .light)
-                                    viewModel.selectedBucketForModal = goal.id
-                                    viewModel.isAddModalPresented = true
-                                } label: {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "plus")
+                                HStack(spacing: 6) {
+                                    // Edit Bucket Button
+                                    Button {
+                                        AppTheme.playTapSound()
+                                        viewModel.bucketToEdit = goal
+                                    } label: {
+                                        Image(systemName: "pencil")
                                             .font(.system(size: 11, weight: .bold))
-                                        Text("Deposit")
-                                            .font(.system(size: 11, weight: .bold))
+                                            .padding(8)
+                                            .background(Color.white.opacity(0.06))
+                                            .foregroundColor(AppTheme.textSecondary)
+                                            .clipShape(Circle())
+                                            .overlay(
+                                                Circle()
+                                                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                                            )
                                     }
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 6)
-                                    .background(Color.white.opacity(0.08))
-                                    .foregroundColor(.white)
-                                    .cornerRadius(10)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                                    )
+
+                                    // Deposit Button
+                                    Button {
+                                        AppTheme.playTapSound()
+                                        viewModel.selectedBucketForModal = goal.id
+                                        viewModel.isAddModalPresented = true
+                                    } label: {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "plus")
+                                                .font(.system(size: 11, weight: .bold))
+                                            Text("Deposit")
+                                                .font(.system(size: 11, weight: .bold))
+                                        }
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 6)
+                                        .background(Color.white.opacity(0.08))
+                                        .foregroundColor(.white)
+                                        .cornerRadius(10)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                                        )
+                                    }
                                 }
                             }
 
@@ -122,12 +175,58 @@ public struct DedicatedBucketsView: View {
                         }
                         .padding(18)
                         .glassCard(cornerRadius: 22, isHighlighted: isHighlighted)
+                        .contextMenu {
+                            Button {
+                                viewModel.selectedBucketForModal = goal.id
+                                viewModel.isAddModalPresented = true
+                            } label: {
+                                Label("Deposit", systemImage: "plus.circle")
+                            }
+
+                            Button {
+                                viewModel.bucketToEdit = goal
+                            } label: {
+                                Label("Edit Bucket", systemImage: "pencil")
+                            }
+
+                            Divider()
+
+                            Button(role: .destructive) {
+                                viewModel.bucketToDelete = goal
+                                viewModel.isDeleteConfirmationPresented = true
+                            } label: {
+                                Label("Delete Bucket", systemImage: "trash")
+                            }
+                        }
                     }
                 }
                 .padding(18)
             }
             .background(AppTheme.background.ignoresSafeArea())
-            .navigationTitle("Dedicated Funds")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(AppTheme.background, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .sheet(isPresented: $viewModel.isCreateBucketModalPresented) {
+                BucketEditorSheet(viewModel: viewModel)
+            }
+            .sheet(item: $viewModel.bucketToEdit) { goal in
+                BucketEditorSheet(viewModel: viewModel, editingGoal: goal)
+            }
+            .alert("Delete Bucket?", isPresented: $viewModel.isDeleteConfirmationPresented) {
+                Button("Cancel", role: .cancel) {}
+                Button("Delete", role: .destructive) {
+                    if let goal = viewModel.bucketToDelete {
+                        viewModel.deleteBucket(id: goal.id)
+                        viewModel.bucketToDelete = nil
+                    }
+                }
+            } message: {
+                if let goal = viewModel.bucketToDelete {
+                    Text("Are you sure you want to delete '\(goal.name)'? Transactions will be reassigned safely to General Savings.")
+                } else {
+                    Text("Are you sure you want to delete this bucket?")
+                }
+            }
         }
     }
 }

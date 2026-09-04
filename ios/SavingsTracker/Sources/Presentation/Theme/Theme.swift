@@ -27,7 +27,7 @@ public enum AppTheme {
     public static let textSecondary = Color(hex: "#94A3B8")
     public static let textMuted = Color(hex: "#64748B")
 
-    // MARK: - Haptic Feedback
+    // MARK: - Audio & Haptic Feedback
     #if os(iOS)
     public typealias ImpactFeedbackStyle = UIImpactFeedbackGenerator.FeedbackStyle
     public typealias NotificationFeedbackType = UINotificationFeedbackGenerator.FeedbackType
@@ -43,6 +43,26 @@ public enum AppTheme {
         generator.prepare()
         generator.notificationOccurred(type)
     }
+
+    public static func playDepositSound() {
+        SoundService.shared.playDepositSound()
+        triggerNotificationHaptic(type: .success)
+    }
+
+    public static func playTapSound() {
+        SoundService.shared.playTapSound()
+        triggerHaptic(style: .light)
+    }
+
+    public static func playCelebrationSound() {
+        SoundService.shared.playCelebrationSound()
+        triggerNotificationHaptic(type: .success)
+    }
+
+    public static func playDeleteSound() {
+        SoundService.shared.playDeleteSound()
+        triggerNotificationHaptic(type: .warning)
+    }
     #else
     public enum ImpactFeedbackStyle {
         case light, medium, heavy, soft, rigid
@@ -53,6 +73,10 @@ public enum AppTheme {
 
     public static func triggerHaptic(style: ImpactFeedbackStyle = .medium) {}
     public static func triggerNotificationHaptic(type: NotificationFeedbackType = .success) {}
+    public static func playDepositSound() {}
+    public static func playTapSound() {}
+    public static func playCelebrationSound() {}
+    public static func playDeleteSound() {}
     #endif
 }
 
