@@ -17,7 +17,15 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Select Xcode Version
-        run: sudo xcode-select -switch /Applications/Xcode_15.4.app/Contents/Developer
+        run: |
+          for xc in /Applications/Xcode_16*.app /Applications/Xcode_15*.app; do
+            if [ -d "$xc" ]; then
+              echo "Found $xc, switching..."
+              sudo xcode-select -switch "$xc/Contents/Developer"
+              break
+            fi
+          done
+          xcodebuild -version
 
       - name: Verify Swift Version
         run: swift --version
