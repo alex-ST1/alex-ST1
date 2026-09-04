@@ -3,7 +3,9 @@ import SwiftUI
 /// Main application entrypoint for the Savings Tracker iOS application.
 /// Incorporates hardware-level security, App Switcher privacy shielding, App Lock with biometrics/passcode,
 /// and protected deep-link / navigation routing.
+#if os(iOS)
 @main
+#endif
 public struct SavingsTrackerApp: App {
 
     @Environment(\.scenePhase) private var scenePhase
